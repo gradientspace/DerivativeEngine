@@ -1,0 +1,231 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+
+
+namespace Gradientspace.NodeGraph
+{
+
+    public struct NodeInputRequirement
+    {
+        public string InputName;
+        // flags?
+    }
+
+
+
+    public abstract class NodeBase : INode
+    {
+        public abstract string GetDefaultNodeName();
+        public virtual string GetCustomNodeName()
+        {
+            return GetDefaultNodeName();
+        }
+
+        public struct NodeInputInfo
+        {
+            public string Name;
+            public int LastTimestamp;
+            public INodeInput Input;
+        };
+
+        public struct NodeOutputInfo
+        {
+            public string Name;
+            public INodeOutput Output;
+        }
+
+        public List<NodeInputInfo> Inputs;
+        public List<NodeOutputInfo> Outputs;
+
+        public NodeBase()
+        {
+            Inputs = new List<NodeInputInfo>();
+            Outputs = new List<NodeOutputInfo>();
+        }
+
+        //! the identifier of this node in the Graph that owns it
+        public int GraphIdentifier { get; private set; } = -1;
+        //! the type of this node in the NodeLibrary that owns it
+        public NodeType? LibraryNodeType { get; private set; } = null;
+        
+        //! configure external NodeGraph/NodeLibrary info in an instance of this node
+        internal void SetOwningGraphInfo(int useGraphIdentifier, NodeType? useNodeType)
+        {
+            GraphIdentifier = useGraphIdentifier;
+            LibraryNodeType = useNodeType;
+        }
+
+
+
+        public bool AddInput(string Name, INodeInput Input)
+        {
+            if ( Inputs.Exists(x => x.Name == Name) )
+            {
+                System.Console.WriteLine("INPUT " + Name + "ALREADY EXISTS!");
+                return false;
+            }
+            NodeInputInfo InputInfo = new();
+            InputInfo.Name = Name;
+            InputInfo.LastTimestamp = -1;
+            InputInfo.Input = Input;
+            Inputs.Add(InputInfo);
+            return true;
+        }
+
+
+        public bool ReplaceInput(string Name, INodeInput NewInput)
+        {
+            for (int i = 0; i < Inputs.Count; ++i ) {
+                if (Inputs[i].Name == Name) {
+                    NodeInputInfo CurInfo = Inputs[i];
+                    CurInfo.LastTimestamp = -1;
+                    CurInfo.Input = NewInput;
+                    Inputs[i] = CurInfo;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
+        public bool ReplaceInputAtIndex(int InputIndex, string NewName, INodeInput NewInput)
+        {
+            if (InputIndex < 0 && InputIndex >= Inputs.Count)
+                return false;
+            if (FindInput(NewName) != null)
+                return false;
+
+            NodeInputInfo CurInfo = Inputs[InputIndex];
+            CurInfo.Name = NewName;
+            CurInfo.LastTimestamp = -1;
+            CurInfo.Input = NewInput;
+            Inputs[InputIndex] = CurInfo;
+            return true;
+        }
+
+
+        public bool AddOutput(string Name, INodeOutput Output)
+        {
+            if (Outputs.Exists(x => x.Name == Name))
+            {
+                System.Diagnostics.Debugger.Break();
+                System.Console.WriteLine("OUTPUT " + Name + "ALREADY EXISTS!");
+                return false;
+            }
+            NodeOutputInfo OutputInfo = new();
+            OutputInfo.Name = Name;
+            OutputInfo.Output = Output;
+            Outputs.Add(OutputInfo);
+            return true;
+        }
+
+        public bool ReplaceOutput(string Name, INodeOutput NewOutput)
+        {
+            for (int i = 0; i < Inputs.Count; ++i) {
+                if (Outputs[i].Name == Name) {
+                    NodeOutputInfo CurInfo = Outputs[i];
+                    CurInfo.Output = NewOutput;
+                    Outputs[i] = CurInfo;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+
+        public INodeInput? FindInput(string Name)
+        {
+            foreach (NodeInputInfo inputInfo in Inputs) {
+                if (inputInfo.Name == Name)
+                    return inputInfo.Input;
+            }
+            return null;
+        }
+        public INodeOutput? FindOutput(string Name)
+        {
+            foreach (NodeOutputInfo OutputInfo in Outputs)
+            {
+                if (OutputInfo.Name == Name)
+                    return OutputInfo.Output;
+            }
+            return null;
+        }
+
+
+        //
+        // INode Interface
+        // 
+        public string GetNodeName()     
+        {
+            return GetDefaultNodeName();
+        }
+        public IEnumerable<INodeInputInfo> EnumerateInputs()
+        {
+            foreach (NodeInputInfo InputInfo in Inputs)
+                yield return new INodeInputInfo() { InputName = InputInfo.Name, Input = InputInfo.Input };
+        }
+        public IEnumerable<INodeOutputInfo> EnumerateOutputs()
+        {
+            foreach (NodeOutputInfo OutputInfo in Outputs)
+                yield return new INodeOutputInfo() { OutputName = OutputInfo.Name, Output = OutputInfo.Output };
+        }
+
+
+
+        //
+        // Evaluation
+        //
+
+
+        public virtual void CollectOutputRequirements(
+            IEnumerable<string> Outputs,
+            List<NodeInputRequirement> AccumRequirements)
+        {
+            // by default assume all inputs are necessary
+            foreach ( NodeInputInfo info in Inputs )
+            {
+                AccumRequirements.Add(new() { InputName = info.Name });
+            }
+        }
+
+
+        // RequestedDataOut must be initialized with desired members!
+        public abstract void Evaluate(
+            ref readonly NamedDataMap DataIn,
+            NamedDataMap RequestedDataOut);
+
+
+
+        //
+        // dynamic node change notifications
+        //
+        public delegate void NodeModifiedEventDelegate(NodeBase node);
+        public NodeModifiedEventDelegate? OnNodeModified;
+
+        public void PublishNodeModifiedNotification()
+        {
+            OnNodeModified?.Invoke(this);
+        }
+
+
+        //
+        // serialization-related functions
+        //
+        public virtual void CollectCustomDataItems(out List<Tuple<string, object>>? DataItems) { DataItems = null; }
+        public virtual void RestoreCustomDataItems(List<Tuple<string, object>> DataItems) { }
+
+
+    }
+
+
+
+
+    public abstract class StandardNode : NodeBase
+    {
+        public override string GetDefaultNodeName()
+        {
+            return GetType().Name;
+        }
+    }
+}
