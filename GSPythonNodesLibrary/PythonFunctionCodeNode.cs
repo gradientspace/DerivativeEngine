@@ -24,6 +24,10 @@ namespace Gradientspace.NodeGraph.PythonNodes
 
 		public PythonFunctionCodeNode()
 		{
+			// NOTE: NodeLibrary.Build() creates an instance of this type (as nodeArchetype), which
+			// forces a code update, which forces PythonEngine to be loaded/initialized (which is slow). 
+			// Maybe we could avoid OnCodeUpdated() here?? Like set a bPendingCodeUpdate flag or something?
+
 			SourceCode = SourceCodeDataType.MakeDefaultPython();
 			OnCodeUpdated();
 		}

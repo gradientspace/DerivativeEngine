@@ -42,9 +42,9 @@ namespace Gradientspace.NodeGraph
                 if (EnableDebugPrinting)
                 {
                     if (Result == null)
-                        System.Console.WriteLine("Node " + nodeInfo.Node!.GetNodeName() + " : value is null");
+                        GlobalGraphOutput.AppendError("Node " + nodeInfo.Node!.GetNodeName() + " : value is null");
                     else
-                        System.Console.WriteLine("Node " + nodeInfo.Node!.GetNodeName() + " : value is type " + Result.GetType().Name + " with value " + Result.ToString());
+						GlobalGraphOutput.AppendError("Node " + nodeInfo.Node!.GetNodeName() + " : value is type " + Result.GetType().Name + " with value " + Result.ToString());
                 }
                     
 

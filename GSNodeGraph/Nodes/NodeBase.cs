@@ -62,7 +62,7 @@ namespace Gradientspace.NodeGraph
         {
             if ( Inputs.Exists(x => x.Name == Name) )
             {
-                System.Console.WriteLine("INPUT " + Name + "ALREADY EXISTS!");
+                GlobalGraphOutput.AppendLine("INPUT " + Name + "ALREADY EXISTS!", EGraphOutputType.GraphWarning);
                 return false;
             }
             NodeInputInfo InputInfo = new();
@@ -110,7 +110,7 @@ namespace Gradientspace.NodeGraph
             if (Outputs.Exists(x => x.Name == Name))
             {
                 System.Diagnostics.Debugger.Break();
-                System.Console.WriteLine("OUTPUT " + Name + "ALREADY EXISTS!");
+				GlobalGraphOutput.AppendLine("OUTPUT " + Name + "ALREADY EXISTS!", EGraphOutputType.GraphWarning);
                 return false;
             }
             NodeOutputInfo OutputInfo = new();

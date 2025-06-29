@@ -35,8 +35,8 @@ namespace Gradientspace.NodeGraph
             if ( FoundValue != null )
             {
                 T Value = (T)FoundValue;
-                System.Console.WriteLine(UseFormatString, Value);
-            }
+                GlobalGraphOutput.AppendLine(String.Format(UseFormatString, Value), EGraphOutputType.User);
+			}
             else
                 throw new Exception("PrintValueSinkNode: invalid type conversion");
         }

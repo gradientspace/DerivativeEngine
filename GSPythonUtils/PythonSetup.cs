@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Diagnostics;
 using Python.Runtime;
 
 namespace GSPython
@@ -114,16 +110,26 @@ namespace GSPython
 			PythonVersions.Sort((PythonInstallation a, PythonInstallation b) => { return a.PythonVersion.CompareTo(b.PythonVersion); });
 			PythonVersions.Reverse();
 
+			foreach (var version in PythonVersions)
+				Debug.WriteLine($"[GSPython] Found Python {version.PythonVersion} installation at {version.Path}");
+
 			Python.Runtime.Runtime.PythonDLL = PythonVersions[0].PythonDLLPath;
+
+			Debug.WriteLine($"[GSPython] Trying to Initialize PythonEngine with DLL {PythonVersions[0].PythonDLLPath}");
 
 			PythonEngine.Initialize();
 
 			bIsPythonInitialized = true;
-
-
-			// todo should do this elsewhere...
-			//PythonEngine.Shutdown()
 		}
 
+
+		public static void PythonShutdown()
+		{
+			if (bIsPythonInitialized)
+			{
+				PythonEngine.Shutdown();
+				bIsPythonInitialized = false;
+			}
+		}
 	}
 }

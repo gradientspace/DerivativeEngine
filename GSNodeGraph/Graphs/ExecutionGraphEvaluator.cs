@@ -20,7 +20,9 @@ namespace Gradientspace.NodeGraph
         }
 
         public bool EnableDebugPrinting { get; set; } = false;
-        public bool EnableDebugging { get; set; } = false;
+        public bool EnableDebugging { get; 
+            set; 
+        } = false;
 
         public delegate void EvaluationErrorEvent(string Error, NodeBase? ErrorAtNode);
         public event EvaluationErrorEvent? OnEvaluationErrorEvent;
@@ -46,8 +48,8 @@ namespace Gradientspace.NodeGraph
             catch (Exception e)
             {
                 OnEvaluationErrorEvent?.Invoke( (e.Message.Length > 0) ? e.Message : "(Unspecified Error)", null);
-                System.Diagnostics.Debug.WriteLine("ExecutionGraphEvaluator.EvaluateGraph - Caught Exception!!!");
-                System.Diagnostics.Debug.WriteLine(e.ToString());
+				GlobalGraphOutput.AppendError("ExecutionGraphEvaluator.EvaluateGraph - Caught Exception!!!");
+				GlobalGraphOutput.AppendError(e.ToString());
             }
 
             if (EnableDebugging)
@@ -131,7 +133,7 @@ namespace Gradientspace.NodeGraph
             IConnectionInfo NextSequenceConnection = OutputConnections[0];
 
             if (EnableDebugPrinting)
-                System.Console.WriteLine("ExecutionGraphEvaluator.EvaluateGraph: begin graph evaluation");
+                GlobalGraphOutput.AppendLine("ExecutionGraphEvaluator.EvaluateGraph: begin graph evaluation", EGraphOutputType.Logging);
 
             bool bDone = false;
             while (!bDone)
@@ -154,7 +156,7 @@ namespace Gradientspace.NodeGraph
             }
 
             if ( EnableDebugPrinting)
-                System.Console.WriteLine("ExecutionGraphEvaluator.EvaluateGraph: evaluated {0} nodes", LastNumEvaluatedNodes);
+				GlobalGraphOutput.AppendLine(String.Format("ExecutionGraphEvaluator.EvaluateGraph: evaluated {0} nodes", LastNumEvaluatedNodes), EGraphOutputType.Logging);
         }
 
 
@@ -220,7 +222,7 @@ namespace Gradientspace.NodeGraph
         {
             try {
                 if (EnableDebugging)
-                    System.Console.WriteLine("Evaluating " + Node.GetNodeName());
+					GlobalGraphOutput.AppendLine("Evaluating " + Node.GetNodeName(), EGraphOutputType.Logging);
                 Node.Evaluate(in DataIn, RequestedDataOut);
             } catch (Exception e) {
                 throw new EvaluationAbortedException(e.Message) { FailedNode = Node } ;

@@ -35,7 +35,7 @@ namespace Gradientspace.NodeGraph
         {
             if (!GlobalEnableGraphDebugging) return;
 
-            Debug.Assert(IsDebugging);
+			Debug.Assert(IsDebugging);
             IsDebugging = false;
             ActiveNodeIdentifiers.Clear();
         }
