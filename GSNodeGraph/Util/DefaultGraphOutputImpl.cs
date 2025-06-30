@@ -24,5 +24,12 @@ namespace Gradientspace.NodeGraph
 		{
 			OutputLines.Clear();
 		}
+
+
+		public IEnumerable<Tuple<string,EGraphOutputType>> EnumerateLines()
+		{
+			foreach (OutputLine l in OutputLines)
+				yield return new(l.Line, l.Type);
+		}
 	}
 }
