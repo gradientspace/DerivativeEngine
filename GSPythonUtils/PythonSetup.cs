@@ -9,6 +9,8 @@ namespace GSPython
 
 		internal static bool bIsPythonInitialized = false;
 
+		private static IntPtr BeginAllThreadsHandle = IntPtr.Zero;
+
 		public struct PythonInstallation
 		{
 			public Version PythonVersion = new Version();       // this is dumb, only will work if versions are all #.#.#
@@ -119,6 +121,10 @@ namespace GSPython
 
 			PythonEngine.Initialize();
 
+			// ??? does BeginAllowThreads() block or not-block the GIL thing?
+			// see https://github.com/pythonnet/pythonnet/wiki/Threading
+			BeginAllThreadsHandle = PythonEngine.BeginAllowThreads();
+
 			bIsPythonInitialized = true;
 		}
 
@@ -127,7 +133,22 @@ namespace GSPython
 		{
 			if (bIsPythonInitialized)
 			{
-				PythonEngine.Shutdown();
+				PythonEngine.EndAllowThreads(BeginAllThreadsHandle);
+
+				// TODO
+				// PythonEngine uses BinaryFormatter internally, which was deprecated in dotnet 8 and
+				// removed in dotnet 9. Seems to only be used on Shutdown()? 
+				// Waiting for library update to see if this gets resolved...
+				// See issue here: https://github.com/pythonnet/pythonnet/issues/2282
+				try
+				{
+					AppContext.SetSwitch("System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization", true);	// doesn't work on dotnet 9
+					PythonEngine.Shutdown();
+					AppContext.SetSwitch("System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization", false);
+				} catch (Exception ex) {
+					Debug.WriteLine("Exception thrown by PythonEngine.Shutdown(): " + ex.Message);
+				}
+
 				bIsPythonInitialized = false;
 			}
 		}
