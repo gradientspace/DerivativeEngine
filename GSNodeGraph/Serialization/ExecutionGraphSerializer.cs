@@ -13,13 +13,6 @@ namespace Gradientspace.NodeGraph
             string AssemblyName { get; set; }
         }
 
-        public struct GraphInputConstant
-        {
-            public string InputName { get; set; }
-            public string DataType { get; set; }
-            public object Value { get; set; }
-        }
-
         public struct GraphNodeCustomData
         {
             public string Identifier { get; set; }
@@ -35,7 +28,7 @@ namespace Gradientspace.NodeGraph
             public string NodeClassVariant { get; set; } = "";
             public string Location { get; set; } = "";
 
-            public List<GraphInputConstant> InputConstants { get; set; } = new List<GraphInputConstant>();
+            public List<SerializationUtil.InputConstant> InputConstants { get; set; } = new List<SerializationUtil.InputConstant>();
 
             public List<GraphNodeCustomData> CustomData { get; set; } = new List<GraphNodeCustomData>();
 
@@ -96,29 +89,9 @@ namespace Gradientspace.NodeGraph
                         sni.CustomData.Add(new GraphNodeCustomData() { Identifier = item.Item1, Value = item.Item2 });
                 }
 
-                foreach ( NodeBase.NodeInputInfo inputInfo in node.Inputs )
-                {
-                    INodeInput input = inputInfo.Input;
-                    (object? constantValue, bool bIsDefined) = input.GetConstantValue();
-                    if (bIsDefined == false || constantValue == null)
-                        continue;
-
-                    GraphDataType inputDataType = input.GetDataType();
-                    Type inputType = inputDataType.DataType;
-
-                    GraphInputConstant constant = new GraphInputConstant();
-                    constant.InputName = inputInfo.Name;
-                    constant.DataType = inputType.FullName ?? inputType.Name;
-
-                    if (constantValue.GetType().IsSubclassOf(typeof(Type)))
-                        constant.Value = (constantValue as Type)!.AssemblyQualifiedName!;
-                    else if (inputType.IsEnum)
-                        constant.Value = constantValue.ToString()!;
-                    else
-                        constant.Value = constantValue;
-
-                    sni.InputConstants.Add(constant);
-                }
+                SerializationUtil.SaveInputConstants(node, out var SavedInputConstants);
+                if (SavedInputConstants != null)
+                    sni.InputConstants.AddRange(SavedInputConstants);
 
                 Serialized.Nodes.Add(sni);
             }
@@ -225,12 +198,12 @@ namespace Gradientspace.NodeGraph
                     FoundNode.RestoreCustomDataItems(Items);
                 }
 
-                foreach (GraphInputConstant constant in node.InputConstants) 
+                foreach (SerializationUtil.InputConstant constant in node.InputConstants) 
                 {
                     foreach (NodeBase.NodeInputInfo inputInfo in FoundNode.Inputs) 
                     {
                         if (inputInfo.Name == constant.InputName) {
-                            RestoreInputConstant(constant, inputInfo);
+							SerializationUtil.RestoreInputConstant(FoundNode, inputInfo.AsInterface, constant);
                             break;
                         }
                     }
@@ -314,92 +287,6 @@ namespace Gradientspace.NodeGraph
             }
 
             return (bNodeErrors == false) && (bConnectionErrors == false);
-        }
-
-
-
-
-        internal static void RestoreInputConstant(in GraphInputConstant constant, in NodeBase.NodeInputInfo inputInfo)
-        {
-            INodeInput input = inputInfo.Input;
-            GraphDataType dataType = input.GetDataType();
-            Type inputType = dataType.DataType;
-
-            string useTypeName = inputType.FullName ?? inputType.Name;
-            (object? constantValue, bool bIsDefined) = input.GetConstantValue();
-            if (bIsDefined != false && constantValue != null && useTypeName == constant.DataType)
-            {
-                string? stringConstant = constant.Value.ToString();
-                Debug.Assert(stringConstant != null);
-
-                if (useTypeName == "System.Type")
-                {
-                    Type? FoundType = TypeUtils.FindTypeInLoadedAssemblies(stringConstant);
-                    if (FoundType != null)
-                        input.SetConstantValue(FoundType);
-                    return;
-                }
-
-                if ( useTypeName.StartsWith("System.") == false )
-                {
-                    // if it's not a system type, we need to find it. First check for enums...
-                    Type? EnumType = TypeUtils.FindEnumTypeFromFullName(useTypeName);
-                    if ( EnumType != null && TypeUtils.GetEnumInfo(EnumType, out var EnumInfo) )
-                    {
-                        object? EnumValue = EnumInfo.FindEnumValueFromString(stringConstant);
-                        if (EnumValue != null)
-                            input.SetConstantValue(EnumValue);
-
-                        // not using by-integer...
-                        //if (int.TryParse(stringConstant, out int EnumID))
-                        //{
-                        //    object? EnumValue = EnumInfo.FindEnumValueFromID(EnumID);
-                        //    if (EnumValue != null)
-                        //        input.SetConstantValue(EnumValue);
-                        //}
-                    }
-
-                    return;
-                }
-
-                // for int types can we cast?
-                // for float/double do we need to consider writing precision?
-                if (useTypeName == typeof(float).FullName)
-                {
-                    if (float.TryParse(stringConstant, out float f))
-                        input.SetConstantValue(f);
-                }
-                else if (useTypeName == typeof(double).FullName)
-                {
-                    if (double.TryParse(stringConstant, out double f))
-                        input.SetConstantValue(f);
-                }
-                else if (useTypeName == typeof(int).FullName)
-                {
-                    if (int.TryParse(stringConstant, out int f))
-                        input.SetConstantValue(f);
-                }
-                else if (useTypeName == typeof(short).FullName)
-                {
-                    if (short.TryParse(stringConstant, out short f))
-                        input.SetConstantValue(f);
-                }
-                else if (useTypeName == typeof(long).FullName)
-                {
-                    if (long.TryParse(stringConstant, out long f))
-                        input.SetConstantValue(f);
-                }
-                else if (useTypeName == typeof(bool).FullName)
-                {
-                    if (bool.TryParse(stringConstant, out bool bValue))
-                        input.SetConstantValue(bValue);
-                }
-                else if (useTypeName == typeof(string).FullName)
-                {
-                    input.SetConstantValue(stringConstant);
-                }
-
-            }
         }
 
 
