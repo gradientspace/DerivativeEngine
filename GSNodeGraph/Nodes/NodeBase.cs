@@ -27,7 +27,8 @@ namespace Gradientspace.NodeGraph
             public string Name;
             public int LastTimestamp;
             public INodeInput Input;
-        };
+            public INodeInputInfo AsInterface { get { return new INodeInputInfo() { Input = this.Input, InputName = this.Name }; } }
+		};
 
         public struct NodeOutputInfo
         {

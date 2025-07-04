@@ -93,7 +93,7 @@ namespace Gradientspace.NodeGraph
 
             return internalAddNewNode(NewNode, nodeType);
         }
-        public virtual NodeHandle AddNodeOfType(NodeType NodeType)
+        public virtual NodeHandle AddNodeOfType(NodeType NodeType, int UseSpecifiedNodeID = -1)
         {
             Type NodeClassType = NodeType.ClassType;
 
@@ -119,14 +119,21 @@ namespace Gradientspace.NodeGraph
             if (NewNodeObj == null)
                 throw new Exception("DataFlowGraph.AddNodeOfType: failed to create new node");
 
-            return internalAddNewNode((NodeBase)NewNodeObj, NodeType);
+            return internalAddNewNode((NodeBase)NewNodeObj, NodeType, UseSpecifiedNodeID);
         }
-        protected virtual NodeHandle internalAddNewNode(NodeBase newNode, NodeType ofNodeType)
+        protected virtual NodeHandle internalAddNewNode(NodeBase newNode, NodeType ofNodeType, int UseSpecifiedNodeID = -1)
         {
+            if ( UseSpecifiedNodeID >= 0 ) {
+                foreach (NodeInfo info in Nodes)
+                    if (info.Identifier == UseSpecifiedNodeID)
+                        throw new Exception($"BaseGraph.internalAddNewNode() : UseSpecifiedNodeID {UseSpecifiedNodeID} is already in use");
+            }
+
             NodeInfo Info = new();
             Info.Node = newNode;
-            Info.Identifier = NodeIdentifierCounter++;
-            Info.nodeType = ofNodeType;
+            Info.Identifier = (UseSpecifiedNodeID >= 0) ? UseSpecifiedNodeID : NodeIdentifierCounter;
+            NodeIdentifierCounter = Math.Max(NodeIdentifierCounter + 1, Info.Identifier + 1);
+			Info.nodeType = ofNodeType;
             Nodes.Add(Info);
 
             newNode.SetOwningGraphInfo(Info.Identifier, Info.nodeType);
@@ -494,9 +501,9 @@ namespace Gradientspace.NodeGraph
             return false;
         }
 
-        public virtual INodeInfo CreateNewNodeOfType(NodeType nodeType)
+        public virtual INodeInfo CreateNewNodeOfType(NodeType nodeType, int UseSpecifiedNodeIdentifier = -1)
         {
-            NodeHandle NewNodeHandle = AddNodeOfType(nodeType);
+            NodeHandle NewNodeHandle = AddNodeOfType(nodeType, UseSpecifiedNodeIdentifier);
             NodeBase? Node = FindNodeFromHandle(NewNodeHandle);
             if (Node == null)
                 throw new Exception("CreateNewNodeOfType: cannot find new Node!");
