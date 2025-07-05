@@ -204,6 +204,7 @@ namespace Gradientspace.NodeGraph
         public delegate void NodeModifiedEventDelegate(NodeBase node);
         public NodeModifiedEventDelegate? OnNodeModified;
 
+        //! fire after significant change to node structure (add/remove pins, change pin type)
         public void PublishNodeModifiedNotification()
         {
             OnNodeModified?.Invoke(this);
