@@ -43,7 +43,7 @@ namespace Gradientspace.NodeGraph
     }
 
 
-    [GraphNodeFunctionLibrary("Gradientspace.Math")]
+    [GraphNodeNamespace("Gradientspace.Math")]
     [GraphNodeUIName("Print Float")]
     public class PrintFloatSinkNode : PrintValueSinkNode<float>
     {
@@ -54,7 +54,7 @@ namespace Gradientspace.NodeGraph
     }
 
 
-    [GraphNodeFunctionLibrary("Gradientspace.Math")]
+    [GraphNodeNamespace("Gradientspace.Math")]
     [GraphNodeUIName("Print Int")]
     public class PrintIntSinkNode : PrintValueSinkNode<int>
     {
@@ -65,7 +65,7 @@ namespace Gradientspace.NodeGraph
     }
 
 
-    [GraphNodeFunctionLibrary("Gradientspace.Math")]
+    [GraphNodeNamespace("Gradientspace.Math")]
     [GraphNodeUIName("Print String")]
     public class PrintStringSinkNode : PrintValueSinkNode<string>
     {

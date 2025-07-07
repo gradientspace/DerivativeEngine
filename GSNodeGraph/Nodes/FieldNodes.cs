@@ -47,7 +47,7 @@ namespace Gradientspace.NodeGraph
     }
 
 
-    [GraphNodeFunctionLibrary("Gradientspace.Placeholders")]
+    [GraphNodeNamespace("Gradientspace.Placeholders")]
     public class SetFieldPlaceholderNode : FieldAccessPlaceholderNodeBase
     {
         public override string GetDefaultNodeName() {
@@ -66,7 +66,7 @@ namespace Gradientspace.NodeGraph
         }
     }
 
-    [GraphNodeFunctionLibrary("Gradientspace.Placeholders")]
+    [GraphNodeNamespace("Gradientspace.Placeholders")]
     public class GetFieldPlaceholderNode : FieldAccessPlaceholderNodeBase
     {
         public override string GetDefaultNodeName() {

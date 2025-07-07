@@ -11,7 +11,7 @@ namespace Gradientspace.NodeGraph
 
     // not clear that we want to support this...
 //#if false
-    [GraphNodeFunctionLibrary("Gradientspace.Core")]
+    [GraphNodeNamespace("Gradientspace.Core")]
     public class CreateObjectNode : NodeBase
     {
         public override string GetDefaultNodeName() { return "Create Object"; }
@@ -71,7 +71,7 @@ namespace Gradientspace.NodeGraph
 
 
 
-    [GraphNodeFunctionLibrary("Gradientspace.Array")]
+    [GraphNodeNamespace("Gradientspace.Array")]
     public class CreateArrayNode : NodeBase
     {
         public override string GetDefaultNodeName() { return "Create Array"; }

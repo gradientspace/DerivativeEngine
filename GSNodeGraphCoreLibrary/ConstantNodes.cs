@@ -43,21 +43,21 @@ namespace Gradientspace.NodeGraph.Nodes
 
 
 
-    [GraphNodeFunctionLibrary("Gradientspace.Constants")]
+    [GraphNodeNamespace("Gradientspace.Constants")]
     [GraphNodeUIName("Make Int32")]
     public class Int32ConstantNode : GenericPODConstantNode<int>
     {
         public override string GetDefaultNodeName() { return "Make Int32"; }
     }
 
-    [GraphNodeFunctionLibrary("Gradientspace.Constants")]
+    [GraphNodeNamespace("Gradientspace.Constants")]
     [GraphNodeUIName("Make Float")]
     public class FloatConstantNode : GenericPODConstantNode<float>
     {
         public override string GetDefaultNodeName() { return "Make Float"; }
     }
 
-    [GraphNodeFunctionLibrary("Gradientspace.Constants")]
+    [GraphNodeNamespace("Gradientspace.Constants")]
     [GraphNodeUIName("Make Double")]
     public class DoubleConstantNode : GenericPODConstantNode<double>
     {
@@ -66,7 +66,7 @@ namespace Gradientspace.NodeGraph.Nodes
 
 
 
-    [GraphNodeFunctionLibrary("Gradientspace.Constants")]
+    [GraphNodeNamespace("Gradientspace.Constants")]
     [GraphNodeUIName("Make String")]
     public class StringConstantNode : StandardNode
     {

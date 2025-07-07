@@ -7,7 +7,7 @@ using System.Diagnostics;
 
 namespace Gradientspace.NodeGraph.PythonNodes
 {
-	[GraphNodeFunctionLibrary("Gradientspace.Python")]
+	[GraphNodeNamespace("Gradientspace.Python")]
 	[GraphNodeUIName("Python Function Node")]
 	public class PythonFunctionCodeNode : PythonFunctionNodeBase, INodeWithInlineCode
 	{

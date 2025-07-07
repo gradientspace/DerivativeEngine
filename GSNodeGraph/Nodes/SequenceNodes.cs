@@ -62,7 +62,7 @@ namespace Gradientspace.NodeGraph
         }
     }
 
-    [GraphNodeFunctionLibrary("Gradientspace.ControlFlow")]
+    [GraphNodeNamespace("Gradientspace.ControlFlow")]
     public class BranchNode : ControlFlowNode
     {
         public const string BooleanInputName  = "Boolean";
@@ -95,7 +95,7 @@ namespace Gradientspace.NodeGraph
     }
 
 
-    [GraphNodeFunctionLibrary("Gradientspace.ControlFlow")]
+    [GraphNodeNamespace("Gradientspace.ControlFlow")]
     public class ForLoopNode : IterationNode
     {
         public static string StartValueInputName { get { return "Start"; } }
@@ -176,7 +176,7 @@ namespace Gradientspace.NodeGraph
 
 
 
-    [GraphNodeFunctionLibrary("Gradientspace.ControlFlow")]
+    [GraphNodeNamespace("Gradientspace.ControlFlow")]
     [GraphNodeUIName("Sequence")]
     public class SequenceNode : IterationNode, INode_VariableOutputs
     {

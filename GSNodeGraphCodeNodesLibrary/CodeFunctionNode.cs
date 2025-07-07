@@ -11,7 +11,7 @@ using System.Runtime.Loader;
 
 namespace Gradientspace.NodeGraph.CodeNodes
 {
-    [GraphNodeFunctionLibrary("Gradientspace.Code")]
+    [GraphNodeNamespace("Gradientspace.Code")]
     [GraphNodeUIName("C# Function Node")]
     public class CodeFunctionNode : LibraryFunctionNodeBase, INodeWithInlineCode
 	{
