@@ -271,7 +271,7 @@ namespace Gradientspace.NodeGraph
 		public const string TypeInputName = "Type";
         public const string ArrayOutputName = "Array";
 
-		public int NumInputs { get; set; } = 2;
+		public int NumArrayInputs { get; set; } = 2;
 
 		ClassTypeNodeInput TypeInput;
         Type ActiveArrayType;
@@ -299,26 +299,22 @@ namespace Gradientspace.NodeGraph
 
 		public bool AddInput()
 		{
-            add_input();
+            add_array_input();
 			PublishNodeModifiedNotification();
 			return true;
 		}
-        protected void add_input()
+        protected void add_array_input()
         {
 			Type elementType = TypeInput.ConstantValue;
-
-			//AddInput(MakeInputName(NumInputs), new StandardNodeInputWithConstant<float>(0.0f));
-			AddInput(MakeInputName(NumInputs), new StandardNodeInputBase(elementType));
-
-			NumInputs = NumInputs + 1;
+			AddInput(MakeInputName(NumArrayInputs), new StandardNodeInputBase(elementType));
+			NumArrayInputs = NumArrayInputs + 1;
 		}
 
 		public bool RemoveInput(int SpecifiedIndex = -1)
 		{
-			if (NumInputs <= 1) return false;
-
-			Inputs.RemoveAt(NumInputs - 1);
-			NumInputs = Inputs.Count;
+			if (NumArrayInputs <= 1) return false;
+			Inputs.RemoveAt(Inputs.Count-1);
+            NumArrayInputs--;
 			PublishNodeModifiedNotification();
 			return true;
 		}
@@ -328,10 +324,10 @@ namespace Gradientspace.NodeGraph
         {
             // rebuild inputs
             Inputs.RemoveRange(1, Inputs.Count - 1);
-            int want_num_inputs = NumInputs;
-            NumInputs = 0;
-            while (NumInputs < want_num_inputs)
-                add_input();
+            int want_num_inputs = NumArrayInputs;
+            NumArrayInputs = 0;
+            while (NumArrayInputs < want_num_inputs)
+                add_array_input();
 
             // rebuild output
             Outputs.Clear();
@@ -347,13 +343,13 @@ namespace Gradientspace.NodeGraph
 			Func<object>? UseConstructor = TypeUtils.FindParameterlessConstructorForType(elementType);
 
             // create output array
-			object? newObject = Activator.CreateInstance(ActiveArrayType, new object[] { NumInputs });
+			object? newObject = Activator.CreateInstance(ActiveArrayType, new object[] { NumArrayInputs });
             if (newObject == null)
                 throw new Exception("MakeArrayFromValuesNode: could not create new array of type " + TypeUtils.TypeToString(ActiveArrayType));
             Array newArray = (Array)newObject;
 
             // populate output array from input pins
-			for (int i = 0; i < NumInputs; ++i)
+			for (int i = 0; i < NumArrayInputs; ++i)
 			{
                 object? itemValue = DataIn.FindItemValueAsType(MakeInputName(i), elementType);
 				//if ( itemValue == null && elementType.IsValueType == false && UseConstructor != null)
@@ -375,13 +371,13 @@ namespace Gradientspace.NodeGraph
 		public override void CollectCustomDataItems(out List<Tuple<string, object>>? DataItems)
 		{
 			DataItems = new List<Tuple<string, object>>();
-			DataItems.Add(new(NumInputsKey, NumInputs));
+			DataItems.Add(new(NumInputsKey, NumArrayInputs));
 		}
 		public override void RestoreCustomDataItems(List<Tuple<string, object>> DataItems)
 		{
 			Tuple<string, object>? NumInputsFound = DataItems.Find((x) => { return x.Item1 == NumInputsKey; });
 			if (NumInputsFound != null) {
-                NumInputs = ((JsonElement)NumInputsFound.Item2).GetInt32();
+                NumArrayInputs = ((JsonElement)NumInputsFound.Item2).GetInt32();
                 updateInputsAndOutputs();
 			}
 		}
