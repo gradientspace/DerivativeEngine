@@ -224,7 +224,15 @@ namespace Gradientspace.NodeGraph
             {
                 if (NodeIdentifierMap.TryGetValue(c.FromNode, out int FromNodeIdentifier) == false
                      || NodeIdentifierMap.TryGetValue(c.ToNode, out int ToNodeIdentifier) == false)
+                {
+                    bConnectionErrors = true;
                     continue;
+                }
+
+                if (FromNodeIdentifier < 0) {
+                    bConnectionErrors = true;
+                    continue;
+                }
 
                 Connection mappedC = new Connection() { 
                     FromNode = FromNodeIdentifier, OutputName = c.OutputName, 
