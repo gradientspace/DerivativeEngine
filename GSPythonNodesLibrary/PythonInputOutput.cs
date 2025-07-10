@@ -1,3 +1,4 @@
+// Copyright Gradientspace Corp. All Rights Reserved.
 using Gradientspace.NodeGraph;
 using GSPython;
 

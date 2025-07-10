@@ -1,4 +1,5 @@
-﻿using Python.Runtime;
+// Copyright Gradientspace Corp. All Rights Reserved.
+using Python.Runtime;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

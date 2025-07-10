@@ -1,4 +1,5 @@
-﻿using GSPython;
+// Copyright Gradientspace Corp. All Rights Reserved.
+using GSPython;
 using Python.Runtime;
 using System;
 using System.Collections.Generic;

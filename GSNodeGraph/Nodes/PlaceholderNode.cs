@@ -1,4 +1,5 @@
-﻿
+// Copyright Gradientspace Corp. All Rights Reserved.
+
 using System.Collections;
 
 namespace Gradientspace.NodeGraph

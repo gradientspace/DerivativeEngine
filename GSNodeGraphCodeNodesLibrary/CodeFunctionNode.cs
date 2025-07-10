@@ -1,4 +1,5 @@
-﻿using Gradientspace.NodeGraph;
+// Copyright Gradientspace Corp. All Rights Reserved.
+using Gradientspace.NodeGraph;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;

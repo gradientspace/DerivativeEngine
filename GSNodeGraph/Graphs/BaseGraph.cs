@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+// Copyright Gradientspace Corp. All Rights Reserved.
+using System.Diagnostics;
 
 namespace Gradientspace.NodeGraph
 {

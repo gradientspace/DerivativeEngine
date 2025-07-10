@@ -1,4 +1,5 @@
-﻿using System;
+// Copyright Gradientspace Corp. All Rights Reserved.
+using System;
 
 namespace Gradientspace.NodeGraph
 {

@@ -1,4 +1,5 @@
-﻿using System;
+// Copyright Gradientspace Corp. All Rights Reserved.
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
