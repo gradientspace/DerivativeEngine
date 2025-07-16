@@ -72,13 +72,16 @@ namespace Gradientspace.NodeGraph.PythonNodes
 			try
 			{
 				PythonSetup.InitializePython();
-				using (Py.GIL()) {
-					CurrentPyLib = PythonLibrary.ParseModuleSource(SourceCode.CodeText);
+				if (PythonSetup.IsPythonAvailable)
+				{
+					using (Py.GIL())
+					{
+						CurrentPyLib = PythonLibrary.ParseModuleSource(SourceCode.CodeText);
+					}
+
+					// maybe should take last function, not first? does python require definitions in-order?
+					NodeFunction = CurrentPyLib.PythonFunctions[0];
 				}
-
-				// maybe should take last function, not first? does python require definitions in-order?
-				NodeFunction = CurrentPyLib.PythonFunctions[0];
-
 			} 
 			catch(Exception ex)
 			{

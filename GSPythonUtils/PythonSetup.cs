@@ -20,17 +20,19 @@ namespace GSPython
 			public PythonInstallation() { }
 		}
 
+		public static bool IsPythonAvailable { get { return bIsPythonInitialized; } }
 
-		public static void InitializePython()
+		public static bool InitializePython()
 		{
 			if (bIsPythonInitialized)
-				return;
+				return true;
 
 			// all the installed python versions we found
 			List<PythonInstallation> PythonVersions = new List<PythonInstallation>();
 
 			// try to detect a python installation in a folder and find the pythonXYZ.dll file
-			var try_add_python_version = (string rootpath) => {
+			var try_add_python_version = (string rootpath) =>
+			{
 				try
 				{
 					string dirname = Path.GetFileName(rootpath);
@@ -45,7 +47,8 @@ namespace GSPython
 
 						// check if we already found this exact dll, ie were already called with this rootpath
 						// via some other means (possible if we are iterating through different possible install locations)
-						int ExistingIndex = PythonVersions.FindIndex((PythonInstallation p) => {
+						int ExistingIndex = PythonVersions.FindIndex((PythonInstallation p) =>
+						{
 							return Path.GetFullPath(p.PythonDLLPath) == Path.GetFullPath(dllpath);
 						});
 						if (ExistingIndex != -1)
@@ -76,7 +79,8 @@ namespace GSPython
 
 						PythonVersions.Add(new PythonInstallation() { PythonVersion = FoundVersion, Path = rootpath, PythonDLLPath = dllpath });
 					}
-				} catch (Exception) { }
+				}
+				catch (Exception) { }
 			};
 
 			// search in Users\<username>\AppData\Local\Programs\Python\Python###
@@ -107,7 +111,10 @@ namespace GSPython
 			//string[] subpaths = PathVariable.Split(';');
 
 			if (PythonVersions.Count == 0)
-				throw new Exception("Could not find a suitable python dll!");
+			{
+				Debug.WriteLine("Could not find a suitable python dll!");
+				return false;
+			}
 
 			// largest version number first
 			PythonVersions.Sort((PythonInstallation a, PythonInstallation b) => { return a.PythonVersion.CompareTo(b.PythonVersion); });
@@ -127,6 +134,7 @@ namespace GSPython
 			BeginAllThreadsHandle = PythonEngine.BeginAllowThreads();
 
 			bIsPythonInitialized = true;
+			return true;
 		}
 
 
