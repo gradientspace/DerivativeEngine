@@ -46,6 +46,8 @@ namespace Gradientspace.NodeGraph
 
 			constant.InputName = inputInfo.InputName;
 			constant.DataType = inputType.FullName ?? inputType.Name;
+			if (constant.DataType.StartsWith("System.") == false )
+				constant.DataType = TypeUtils.MakePartialQualifiedTypeName(inputType);
 
 			if (constantValue.GetType().IsSubclassOf(typeof(Type)))
 				constant.Value = TypeUtils.MakePartialQualifiedTypeName( (constantValue as Type)! );

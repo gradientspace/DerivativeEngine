@@ -229,6 +229,10 @@ namespace Gradientspace.NodeGraph
          */
         public static string MakePartialQualifiedTypeName(Type type)
         {
+            // for types in System libraries we do not need the assembly name... ?
+            if (type.FullName != null && type.FullName.StartsWith("System."))
+                return type.FullName;
+
             string baseName = type.AssemblyQualifiedName!;
             string[] substrings = baseName.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             return $"{substrings[0]}, {substrings[1]}";
