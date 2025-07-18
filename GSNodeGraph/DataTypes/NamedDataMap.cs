@@ -63,8 +63,7 @@ namespace Gradientspace.NodeGraph
             return -1;
         }
 
-
-        public bool FindItemValueStrict<T>(string Name, ref T ValueOut, bool bThrowException = true)
+		public bool FindItemValueStrict<T>(string Name, ref T ValueOut, bool bThrowException = true)
         {
             bool bFoundName = false, bHasValue = false, bCorrectType = false;
             Type? invalidType = null;

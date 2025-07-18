@@ -56,7 +56,7 @@ namespace Gradientspace.NodeGraph
             Type activeType = TypeInput.ConstantValue;
             Func<object>? UseConstructor = TypeUtils.FindParameterlessConstructorForType(activeType);
             if (UseConstructor == null)
-                throw new Exception("CreateListNode: cound not find default constructor for " + activeType.FullName);
+                throw new Exception("CreateObjectNode: cound not find default constructor for " + activeType.FullName);
 
             object newObject = UseConstructor();
             if (newObject == null)

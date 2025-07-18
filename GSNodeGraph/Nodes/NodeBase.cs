@@ -193,16 +193,25 @@ namespace Gradientspace.NodeGraph
 
 
         // RequestedDataOut must be initialized with desired members!
-        public abstract void Evaluate(
+        public virtual void Evaluate(
             ref readonly NamedDataMap DataIn,
-            NamedDataMap RequestedDataOut);
+            NamedDataMap RequestedDataOut)
+        {
+            throw new Exception("Must implement node evaluation...");
+        }
 
+		public virtual void Evaluate(
+			EvaluationContext EvalContext,
+			ref readonly NamedDataMap DataIn,
+			NamedDataMap RequestedDataOut)
+        {
+            this.Evaluate(in DataIn, RequestedDataOut);
+        }
 
-
-        //
-        // dynamic node change notifications
-        //
-        public delegate void NodeModifiedEventDelegate(NodeBase node);
+		//
+		// dynamic node change notifications
+		//
+		public delegate void NodeModifiedEventDelegate(NodeBase node);
         public NodeModifiedEventDelegate? OnNodeModified;
 
         //! fire after significant change to node structure (add/remove pins, change pin type)

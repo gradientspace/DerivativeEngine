@@ -22,12 +22,20 @@ namespace Gradientspace.NodeGraph
         public delegate void EvaluationErrorEvent(string Error, NodeBase? ErrorAtNode);
         public event EvaluationErrorEvent? OnEvaluationErrorEvent;
 
+        protected StandardVariables? EvalVariables = null;
+        protected EvaluationContext? EvalContext = null;
+		
+        public IVariablesInterface? ActiveVariables { get { return EvalVariables; } }
 
-        int LastNumEvaluatedNodes = 0;
+
+		int LastNumEvaluatedNodes = 0;
 
         public void EvaluateGraph()
         {
             init_cache();
+
+            EvalVariables = new StandardVariables();
+            EvalContext = new EvaluationContext() { Variables = this.EvalVariables };
 
             if (EnableDebugging)
                 DebugManager.Instance.BeginGraphExecutionDebugSession();
@@ -312,7 +320,7 @@ namespace Gradientspace.NodeGraph
             try {
                 if (EnableDebugging)
 					GlobalGraphOutput.AppendLine("Evaluating " + Node.GetNodeName(), EGraphOutputType.Logging);
-                Node.Evaluate(in DataIn, RequestedDataOut);
+                Node.Evaluate(this.EvalContext!, in DataIn, RequestedDataOut);
             } catch (Exception e) {
                 throw new EvaluationAbortedException(e.Message) { FailedNode = Node } ;
             }
