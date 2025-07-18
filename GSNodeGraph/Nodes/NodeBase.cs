@@ -107,7 +107,21 @@ namespace Gradientspace.NodeGraph
         }
 
 
-        public bool AddOutput(string Name, INodeOutput Output)
+
+		public bool RemoveInput(string Name)
+		{
+			for (int i = 0; i < Inputs.Count; ++i) {
+				if (Inputs[i].Name == Name) {
+                    Inputs.RemoveAt(i);
+                    return true;
+				}
+			}
+			return false;
+		}
+
+
+
+		public bool AddOutput(string Name, INodeOutput Output)
         {
             if (Outputs.Exists(x => x.Name == Name))
             {
