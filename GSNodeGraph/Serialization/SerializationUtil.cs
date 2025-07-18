@@ -48,7 +48,7 @@ namespace Gradientspace.NodeGraph
 			constant.DataType = inputType.FullName ?? inputType.Name;
 
 			if (constantValue.GetType().IsSubclassOf(typeof(Type)))
-				constant.Value = (constantValue as Type)!.AssemblyQualifiedName!;
+				constant.Value = TypeUtils.MakePartialQualifiedTypeName( (constantValue as Type)! );
 			else if (inputType.IsEnum)
 				constant.Value = constantValue.ToString()!;
 			else

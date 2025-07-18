@@ -30,6 +30,13 @@ namespace Gradientspace.NodeGraph
             return IsNumericType(t) && !IsRealType(t);
         }
 
+        public static bool IsNullableType(Type t)
+        {
+            if (!t.IsValueType) return true;
+            if (Nullable.GetUnderlyingType(t) != null) return true;
+            return false;
+        }
+
         public static bool IsIntegerType(Type t, out bool bIsUnsigned, out int NumBytes)
         {
             if (t == typeof(byte) || t == typeof(sbyte))
@@ -214,6 +221,18 @@ namespace Gradientspace.NodeGraph
             return null;
         }
 
+
+        /**
+         * Construct an assembly-qualified name without version information for a Type
+         * eg "g3.DMesh3, geometry3Sharp"
+         * This will work with Type.GetType()...
+         */
+        public static string MakePartialQualifiedTypeName(Type type)
+        {
+            string baseName = type.AssemblyQualifiedName!;
+            string[] substrings = baseName.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            return $"{substrings[0]}, {substrings[1]}";
+        }
 
 
         /**

@@ -15,7 +15,6 @@ namespace Gradientspace.NodeGraph
     }
 
 
-    // todo could be a struct?
     public class NamedDataMap
     {
         public DataItem[] Items;
@@ -122,7 +121,21 @@ namespace Gradientspace.NodeGraph
         }
 
 
-        public void SetItemValueChecked(string Name, object value)
+		// do we need this function? nullable errors
+		public void SetItemValueChecked(string Name, object value)
+        {
+            int N = Items.Length;
+            for (int i = 0; i < N; ++i) {
+                if (Items[i].Name == Name) { 
+                    Items[i].Value = value;
+                    return;
+                }
+            }
+            throw new Exception("Could not find output named " + Name);
+        }
+
+        /// Throws exception if Name doesn't exist in map
+        public void SetItemValueOrNull_Checked(string Name, object? value)
         {
             int N = Items.Length;
             for (int i = 0; i < N; ++i) {
