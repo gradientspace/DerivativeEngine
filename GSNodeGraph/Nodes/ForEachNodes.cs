@@ -178,7 +178,7 @@ namespace Gradientspace.NodeGraph
         public override void CollectCustomDataItems(out List<Tuple<string, object>>? DataItems)
         {
             DataItems = new List<Tuple<string, object>>();
-            DataItems.Add(new(ElementTypeString, EnumerableElementType.ToString()));
+            DataItems.Add(new(ElementTypeString, TypeUtils.MakePartialQualifiedTypeName(EnumerableElementType)));
         }
         public override void RestoreCustomDataItems(List<Tuple<string, object>> DataItems)
         {
@@ -187,6 +187,7 @@ namespace Gradientspace.NodeGraph
                 throw new Exception("ForEachNode: ElementType custom data is missing");
             string TypeName = ElementTypeAsString.Item2.ToString()!;
 
+            // todo possibly should be using TypeUtils.FindTypeInLoadedAssemblies() here...
             Type? elementType = Type.GetType(TypeName);
             if (elementType != null)
                 initializeInternal(elementType);

@@ -264,13 +264,9 @@ namespace Gradientspace.NodeGraph
 
 
 
-        public static INodeInput BuildInputNodeForType(Type inputType, bool bIsOptional = false, object? DefaultValue = null)
+        public static INodeInput BuildInputNodeForType(Type inputType, object? DefaultValue = null)
         {
-            if (bIsOptional)
-            {
-                return new StandardNullableNodeInput(inputType);
-            }
-            else if (inputType == typeof(bool))
+            if (inputType == typeof(bool))
             {
                 bool defaultValue = false;
                 if (DefaultValue != null && DefaultValue is bool)
@@ -336,7 +332,10 @@ namespace Gradientspace.NodeGraph
                     return new StandardNodeInputBaseWithConstant(inputType, defaultValue);
             }
 
-            return new StandardNodeInputBase(inputType);
+            if ( TypeUtils.IsNullableType(inputType) )
+				return new StandardNullableNodeInput(inputType);
+
+			return new StandardNodeInputBase(inputType);
         }
 
     }

@@ -298,12 +298,12 @@ namespace Gradientspace.NodeGraph
             if (SelectedFieldItem.Property != null)
             {
                 Type propertyType = SelectedFieldItem.Property.PropertyType;
-                newInput = FunctionNodeUtils.BuildInputNodeForType(propertyType, false, null);
+                newInput = FunctionNodeUtils.BuildInputNodeForType(propertyType, null);
             }
             else if (SelectedFieldItem.Field != null)
             {
                 Type fieldType = SelectedFieldItem.Field.FieldType;
-                newInput = FunctionNodeUtils.BuildInputNodeForType(fieldType, false, null);
+                newInput = FunctionNodeUtils.BuildInputNodeForType(fieldType, null);
             }
             Debug.Assert(newInput != null);
 

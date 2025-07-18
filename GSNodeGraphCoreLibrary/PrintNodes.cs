@@ -16,7 +16,8 @@ namespace Gradientspace.NodeGraph.Nodes
 		[NodeFunction]
 		public static object? PrintValue(object? Value, string Format = "{0}")
 		{
-			GlobalGraphOutput.AppendLine(String.Format(Format, Value), EGraphOutputType.User);
+			object showValue = (Value != null) ? Value : "null";
+			GlobalGraphOutput.AppendLine(String.Format(Format, showValue), EGraphOutputType.User);
 			return Value;
 		}
 

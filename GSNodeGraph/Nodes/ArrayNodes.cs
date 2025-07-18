@@ -129,7 +129,7 @@ namespace Gradientspace.NodeGraph
 		public override void CollectCustomDataItems(out List<Tuple<string, object>>? DataItems)
 		{
 			DataItems = new List<Tuple<string, object>>();
-			DataItems.Add(new(ArrayTypeKey, ArrayType.ToString()));
+			DataItems.Add(new(ArrayTypeKey, TypeUtils.MakePartialQualifiedTypeName(ArrayType)));
 		}
 		public override void RestoreCustomDataItems(List<Tuple<string, object>> DataItems)
 		{
@@ -270,11 +270,13 @@ namespace Gradientspace.NodeGraph
 
 		public static string ElementBaseName { get { return "Element"; } }
 		public const string TypeInputName = "Type";
-        public const string ArrayOutputName = "Array";
+		public const string AllocateObjectsInputName = "Alloc Objects";
+		public const string ArrayOutputName = "Array";
 
 		public int NumArrayInputs { get; set; } = 2;
 
 		ClassTypeNodeInput TypeInput;
+        StandardNodeInputWithConstant<bool>? AllocateObjectsInput;
         Type ActiveArrayType;
 
         public MakeArrayFromValuesNode()
@@ -307,7 +309,8 @@ namespace Gradientspace.NodeGraph
         protected void add_array_input()
         {
 			Type elementType = TypeInput.ConstantValue;
-			AddInput(MakeInputName(NumArrayInputs), new StandardNodeInputBase(elementType));
+            INodeInput newInput = FunctionNodeUtils.BuildInputNodeForType(elementType, null);
+            AddInput(MakeInputName(NumArrayInputs), newInput);
 			NumArrayInputs = NumArrayInputs + 1;
 		}
 
@@ -323,16 +326,36 @@ namespace Gradientspace.NodeGraph
 
 		protected virtual void updateInputsAndOutputs()
         {
-            // rebuild inputs
-            Inputs.RemoveRange(1, Inputs.Count - 1);
+			Type elementType = TypeInput.ConstantValue;
+            bool bShowMakeDefaultsToggle = TypeUtils.IsNullableType(elementType)
+                && (TypeUtils.FindParameterlessConstructorForType(elementType) != null);
+            int NumCurrentStandardInputs = 1 + (AllocateObjectsInput != null ? 1 : 0);
+
+			// remove existing array inputs
+            // note: must handle on-load where NumArrayInputs is initialized but the Inputs don't exist
+			while (Inputs.Count > NumCurrentStandardInputs)
+			    Inputs.RemoveAt(Inputs.Count - 1);
+
+            // add or remove make-defaults toggle
+            if (bShowMakeDefaultsToggle == false && AllocateObjectsInput != null) {
+                Inputs.RemoveAt(1);     // should always be at this slot
+                AllocateObjectsInput = null;
+            }
+            if ( bShowMakeDefaultsToggle == true && AllocateObjectsInput == null )
+            {
+				AllocateObjectsInput = new StandardNodeInputWithConstant<bool>(true);
+                AllocateObjectsInput.Flags |= ENodeInputFlags.IsNodeConstant;
+				AddInput(AllocateObjectsInputName, AllocateObjectsInput);
+			}
+
+			// rebuild array inputs
             int want_num_inputs = NumArrayInputs;
             NumArrayInputs = 0;
             while (NumArrayInputs < want_num_inputs)
                 add_array_input();
 
             // rebuild output
-            Outputs.Clear();
-            Type elementType = TypeInput.ConstantValue;
+			Outputs.Clear();
             ActiveArrayType = elementType.MakeArrayType();
             AddOutput(ArrayOutputName, new StandardNodeOutputBase(ActiveArrayType));
         }
@@ -350,12 +373,13 @@ namespace Gradientspace.NodeGraph
             Array newArray = (Array)newObject;
 
             // populate output array from input pins
+            bool bCreateDefaults = (AllocateObjectsInput != null) ? AllocateObjectsInput.ConstantValue : true;
 			for (int i = 0; i < NumArrayInputs; ++i)
 			{
                 object? itemValue = DataIn.FindItemValueAsType(MakeInputName(i), elementType);
-				//if ( itemValue == null && elementType.IsValueType == false && UseConstructor != null)
-				if (itemValue == null && UseConstructor != null)
-				{
+                //if ( itemValue == null && elementType.IsValueType == false && UseConstructor != null)
+                if (itemValue == null && UseConstructor != null && bCreateDefaults)
+                {
                     itemValue = UseConstructor();
                 }
                 if (itemValue != null)
