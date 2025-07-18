@@ -164,11 +164,12 @@ namespace Gradientspace.NodeGraph
                 string OutputPinName = item.Name;
                 CachedPinKey pinKey = new() { NodeIdentifier = NodeHandle.Identifier, PinName = OutputPinName };
 
-                if ( item.Value == null )
-                {
-                    CachedPinData!.Remove(pinKey);
-                    continue;
-                }
+                // todo why were we removing from cache on null value? what is the situation in which that happens??
+                //if (item.Value == null)
+                //{
+                //    CachedPinData!.Remove(pinKey);
+                //    continue;
+                //}
 
                 Graph.FindConnectionsFrom(NodeHandle.Identifier, OutputPinName, ref tmp, EConnectionType.Data);
 
@@ -185,13 +186,13 @@ namespace Gradientspace.NodeGraph
             }
         }
         //! try to find existing cached data on an output pin of a node, or null if not found
-        object? find_cached_pin_data(NodeHandle FromNodeHandle, string FromNodeOutputPinName)
+        (object?,bool) find_cached_pin_data(NodeHandle FromNodeHandle, string FromNodeOutputPinName)
         {
             CachedPinKey pinKey = new() { NodeIdentifier = FromNodeHandle.Identifier, PinName = FromNodeOutputPinName };
 
             if (CachedPinData!.TryGetValue(pinKey, out var value))
-                return value;
-            return null;
+                return (value, true);
+            return (null, false);
         }
 
 
@@ -549,20 +550,29 @@ namespace Gradientspace.NodeGraph
 				Debug.Assert(bFoundOutputType == true);
 
 				// if we have already computed the node on the other side of the connection, it's data should be in the output-pin cache
-				object? InputData = find_cached_pin_data(FoundConnection.FromNode, FoundConnection.FromOutput);
-                if (InputData != null)
+                (object? InputData, bool bFound) = find_cached_pin_data(FoundConnection.FromNode, FoundConnection.FromOutput);
+                if (bFound)
                 {
-                    // we might need to convert the cached data to another type   (should that also be cached?? this could be expensive...)
-                    try {
-                        if (InputData.GetType() != inputDataType.DataType)
-                            InputData = ApplyTypeConversionToInputType(InputData, outputDataType, inputDataType);
-                    } catch (Exception e) {
-						throw new EvaluationAbortedException($"type conversion from output [{FoundConnection.FromOutput}:{TypeUtils.TypeToString(outputDataType)}] to input [{FoundConnection.ToInput}:{TypeUtils.TypeToString(inputDataType)}] failed - {e.Message}") { FailedNode = Node };
-					}
+	                if (InputData == null)
+	                {
+		                InputDatas.SetItemNull(k, InputName);
+	                } 
+                    else
+	                {
+		                // we might need to convert the cached data to another type   (should that also be cached?? this could be expensive...)
+		                try
+		                {
+			                if (InputData.GetType() != inputDataType.DataType)
+				                InputData = ApplyTypeConversionToInputType(InputData, outputDataType, inputDataType);
+		                } catch (Exception e)
+		                {
+			                throw new EvaluationAbortedException($"type conversion from output [{FoundConnection.FromOutput}:{TypeUtils.TypeToString(outputDataType)}] to input [{FoundConnection.ToInput}:{TypeUtils.TypeToString(inputDataType)}] failed - {e.Message}") { FailedNode = Node };
+		                }
 
-					InputDatas.SetItem(k, InputName, InputData);
+		                InputDatas.SetItem(k, InputName, InputData);
+	                }
 
-                    continue;
+	                continue;
                 }
 
                 // If we have not already computed and cached that data, we can try to "pull" it. 
