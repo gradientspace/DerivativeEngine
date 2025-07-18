@@ -2,12 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
-using static Gradientspace.NodeGraph.BaseGraph;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace Gradientspace.NodeGraph
 {
@@ -57,8 +51,76 @@ namespace Gradientspace.NodeGraph
                 DebugManager.Instance.EndGraphExecutionDebugSession();
 
             reset_cache();
-        }
+		}
 
+
+
+
+
+
+
+/**
+    - EvaluateGraph():
+        - does some pre/post evaluation setup, calls EvaluateGraph_Internal() to do the work
+
+    - EvaluateGraph_Internal() :
+        - starts at Graph.StartNodeHandle
+	    - repeatedly calls EvaluateNode() on each node in the sequence, which returns a next-connection that is followed
+	    - terminates when no next-connection is found
+	 
+    - EvaluateNode() calls either EvaluateStandardNode(), EvaluateControlFlowNode(), or EvaluateIterationNode() depending on the node type
+
+    - EvaluateStandardNode(node, out next_connection) :
+	    - finds required inputs from the set of required outputs(currently always all outputs)
+	    - calls FetchInputDatas() to populate a NamedDataMap of(input-pin, input-data) pairs
+		    (this may recursively evaluate things, etc)
+	    - calls RunNodeEvaluation() to evaluate the node and fill a NamedDataMap for the(output-pin, output-data) pairs
+	    - calls update_cached_pin_data() to save the output data in the cache
+	    - finds the next output-sequence pin/connection to follow, if it exists
+	
+    - FetchInputDatas(node, required_inputs, inout NamedDataMap input_data) :
+	    - this function finds the incoming data on each input pin for a node, and stores it in a NamedDataMap
+	    - might come from a constant-value on that pin, or from the output-pin-data cache(via find_cached_pin_data())
+	    - may call RecursiveComputeNodeOutputData() to try to compute/"pull" missing data(only viable for sets of non-sequence nodes like math/etc, eg "pure")
+	    - calls ApplyTypeConversionToInputType() to try to convert to input-pin type if it's different
+	
+	
+    - ApplyTypeConversionToInputType(object, inputType, outputType) :
+	    - tries various methods to convert an output data to be the right type for an input pin
+	    - C#-level conversions via Type.IsAssignableTo and IConvertible
+	    - custom conversions via GlobalDataConversionLibrary
+	
+    - RecursiveComputeNodeOutputData(node, output) :
+	    - tries to do "pull"/dataflow-style evaluation of a node+output without following sequence connections
+	    - similar to EvaluateStandardNode() in that it figures out required inputs, calls FetchInputDatas(), RunNodeEvaluation(), update_cached_pin_data()
+	    - FetchInputDatas() may involve recursive calls to RecursiveComputeNodeOutputData()
+
+    - EvaluateControlFlowNode() :
+	    - similar to EvaluateStandardNode(), but deals with selecting 1 of N output pins on ControlFlowNode-subclasses
+
+    - EvaluateIterationNode() :
+	    - similar to EvaluateStandardNode(), but handles special IterationNode types
+	    - IterationNode evalution returns either a continue-iteration output seq pin, or a done-interation seq pin
+	    - for continue-iteration, EvaluateGraphPath() is called to evaluate the entire iteration sequence path
+	    - for done-iteration, returns next-connection as usual
+
+    - EvaluateGraphPath(start_node, start_connection) :
+	    - very similar to EvaluateGraph_Internal(), but starts at a specific node+connection and follows the path that defines
+
+    ===============
+    Pin Data Cache
+    ===============
+    - CachedPinData map stores calculated data on output pins in the graph. 
+    - update_cached_pin_data(node, in NamedDataMap outputData): 
+	    - given NamedDataMap of output data on a Node, stores those datas in the cache if the output is in use downstream (ie pin is connected)
+    - find_cached_pin_data(node, output_pin):
+	    - finds data in the cache if it is available
+**/	
+
+
+
+        // Output Pin Data Caching
+        //    (should be moved to a standalone object)
 
 
         struct CachedPinKey
@@ -67,6 +129,8 @@ namespace Gradientspace.NodeGraph
             public string PinName;
         }
 
+        // This map stores data objects on output pins, it is populated and
+        // updated during graph evaluation
         Dictionary<CachedPinKey, object?>? CachedPinData;
 
         void init_cache()
@@ -77,7 +141,9 @@ namespace Gradientspace.NodeGraph
         {
             CachedPinData = null;
         }
-        void update_cached_pin_data(NodeHandle NodeHandle, NodeBase Node, NamedDataMap outputDatas)
+        //! given a NamedDataMap of output data at a Node, save each datum in the cache
+        //! if it is going to be used (ie if pin is connected)
+        void update_cached_pin_data(NodeHandle NodeHandle, NodeBase Node, in NamedDataMap outputDatas)
         {
             // if we do not have a sequence-in, this is a pure node?
             IConnectionInfo sequenceConnection = Graph.FindConnectionTo(NodeHandle.Identifier, "", EConnectionType.Sequence);
@@ -98,7 +164,7 @@ namespace Gradientspace.NodeGraph
 
                 Graph.FindConnectionsFrom(NodeHandle.Identifier, OutputPinName, ref tmp, EConnectionType.Data);
 
-                // TODO: a lot of improvements possible here...
+                // TODO: a lot of improvements possible here...   (like?)
                 bool bOutputInUse = (tmp.Count > 0);
 
                 if (bOutputInUse)
@@ -110,6 +176,7 @@ namespace Gradientspace.NodeGraph
                 }
             }
         }
+        //! try to find existing cached data on an output pin of a node, or null if not found
         object? find_cached_pin_data(NodeHandle FromNodeHandle, string FromNodeOutputPinName)
         {
             CachedPinKey pinKey = new() { NodeIdentifier = FromNodeHandle.Identifier, PinName = FromNodeOutputPinName };
@@ -120,13 +187,17 @@ namespace Gradientspace.NodeGraph
         }
 
 
-        public void EvaluateGraph_Internal()
+		//! top-level evaluation function
+        protected virtual void EvaluateGraph_Internal()
         {
             LastNumEvaluatedNodes = 0;
 
+            // start evaluation at the start of the graph, but CurrentNode/Handle will be
+            // updated during the evaluation
             NodeHandle CurrentNodeHandle = Graph.StartNodeHandle;
             NodeBase CurrentNode = Graph.StartNode as NodeBase;
 
+            // Find output sequence connection from the current node, ie the next node
             List<IConnectionInfo> OutputConnections = new List<IConnectionInfo>();
             Graph.FindConnectionsFrom(CurrentNodeHandle.Identifier, "", ref OutputConnections, EConnectionType.Sequence);
             if (OutputConnections.Count == 0)
@@ -136,20 +207,28 @@ namespace Gradientspace.NodeGraph
             if (EnableDebugPrinting)
                 GlobalGraphOutput.AppendLine("ExecutionGraphEvaluator.EvaluateGraph: begin graph evaluation", EGraphOutputType.Logging);
 
+            // iterate until we can't find another sequence connection
+            // (potentially this block can be replaced by a call to EvaluateGraphPath()...)
             bool bDone = false;
             while (!bDone)
             {
+                // NextNode is the node we will evaluate
                 NodeHandle NextNodeHandle = new(NextSequenceConnection.ToNodeIdentifier);
                 NodeBase? NextNode = Graph.FindNodeFromHandle(NextNodeHandle) as NodeBase;
                 if (NextNode == null)
                     throw new Exception("ExecutionGraphEvaluator.EvaluateStandardNode: next node in sequence could not be found in graph!");
 
+				// evaluate it. EvaluateNode() returns the connection to the next-node in the sequence path.
+				// Note that EvaluateNode() may evaluate entire sequence sub-paths via EvaluateGraphPath() for
+                // things like loops, etc
                 IConnectionInfo NextConnection = IConnectionInfo.Invalid;
                 EvaluateNode(NextNodeHandle, NextNode, out NextConnection);
 
+                // if we have a new next-connection, continue, otherwise we are done
                 if (NextConnection == IConnectionInfo.Invalid) {
                     bDone = true;
                 } else {
+                    // note: not actually using CurrentNode/CurrentNodeHandle...
                     CurrentNodeHandle = NextNodeHandle;
                     CurrentNode = NextNode!;
                     NextSequenceConnection = NextConnection;
@@ -161,8 +240,10 @@ namespace Gradientspace.NodeGraph
         }
 
 
-
-        protected void EvaluateGraphPath(NodeHandle StartNode, IConnectionInfo OutgoingConnection)
+		// EvaluateGraphPath() evaluates the graph from a StartNode/Connection until no further sequence
+		// connection is found. IE similar to EvaluateGraph_Internal() but for an internal sequence path, 
+		// like the iteration pin of a for-loop
+		protected void EvaluateGraphPath(NodeHandle StartNode, IConnectionInfo OutgoingConnection)
         {
             NodeHandle CurrentNodeHandle = StartNode;
             NodeBase CurrentNode = Graph.FindNodeFromHandle(StartNode)!;
@@ -191,13 +272,19 @@ namespace Gradientspace.NodeGraph
         }
 
 
+        // Top-level Node evaluation function. Evaluates a single node and outputs the sequenece connection
+        // to the node that should be evaluated next, if there is one
         protected void EvaluateNode(
             NodeHandle NextNodeHandle,
             NodeBase NextNode,
             out IConnectionInfo NextConnection)
         {
-            if (EnableDebugging) DebugManager.Instance.PushActiveNode_Async(NextNodeHandle.Identifier);
+            // tell the debug manager we are in this node
+            if (EnableDebugging) 
+                DebugManager.Instance.PushActiveNode_Async(NextNodeHandle.Identifier);
 
+            // some node types are special and are evaluated differently than "standard" nodes
+            // that have only have one sequence output
             if (NextNode is IterationNode)
             {
                 EvaluateIterationNode(NextNodeHandle, NextNode, out NextConnection);
@@ -212,13 +299,14 @@ namespace Gradientspace.NodeGraph
             }
 
             if (EnableDebugging) {
-                Thread.Sleep(100);
+                Thread.Sleep(100);      // possibly DebugManager should be doing this...
                 DebugManager.Instance.PopActiveNode_Async(NextNodeHandle.Identifier);
             }
         }
 
 
-        //! run node evaluation and handle any error reporting
+        //! Actually call the Node.Evaluate() function for a node, with the given Input datamap and output datamap
+        //! This wrapper exists mainly for debugging support and error-handling
         protected virtual void RunNodeEvaluation(NodeBase Node, ref readonly NamedDataMap DataIn, NamedDataMap RequestedDataOut)
         {
             try {
@@ -231,7 +319,9 @@ namespace Gradientspace.NodeGraph
         }
 
 
-        protected void EvaluateIterationNode(
+		// Evaluate an IterationNode-type node, which will recursively evaluate a graph path
+        // multiple times before continuing the calling path evaluation
+		protected void EvaluateIterationNode(
             NodeHandle NextNodeHandle,
             NodeBase NextNode,
             out IConnectionInfo NextConnection)
@@ -250,7 +340,9 @@ namespace Gradientspace.NodeGraph
                 RequiredOutputTypes.Add( outputInfo.Output.GetDataType().DataType );
             }
 
-            // add control flow output
+            // add special outputs that Iteration nodes must have to support 
+            // detecting if we should keep iterating, on a specific output, or
+            // terminate the iteration
             RequiredOutputs.Add(ControlFlowNode.SelectedOutputPathName);
             RequiredOutputTypes.Add(typeof(ControlFlowOutputID));
             RequiredOutputs.Add(IterationNode.ContinueIterationName);
@@ -260,10 +352,11 @@ namespace Gradientspace.NodeGraph
             List<NodeInputRequirement> RequiredInputs = new List<NodeInputRequirement>();
             NextNode.CollectOutputRequirements(RequiredOutputs, RequiredInputs);
 
-            // gather up the incoming data on those inputs
+            // gather up the incoming data on those inputs (which may evaluate non-sequence nodes!)
             NamedDataMap InputDatas = new NamedDataMap(RequiredInputs.Count);
             FetchInputDatas(NextNode, NextNodeHandle, RequiredInputs, InputDatas);
 
+            // populate output datamap
             NamedDataMap OutputDatas = new NamedDataMap(RequiredOutputs.Count);
             for (int i = 0; i < RequiredOutputs.Count; ++i)
                 OutputDatas.SetItem(i, RequiredOutputs[i], RequiredOutputTypes[i], null);
@@ -271,20 +364,26 @@ namespace Gradientspace.NodeGraph
             // initialize the iteration
             IterNode.InitializeIteration(in InputDatas);
 
-
+            // repeatedly evaluate the iteration node, to find out (a) which output sequence pin
+            // should be followed and (b) if we are continuing to iterate or terminating.
+            // If we are continuing to iterate, evaluate path starting at the returned output pin/connection
+            // (assumption is that this is not the "terminate and continue" pin)
             List<IConnectionInfo> OutputConnections = new List<IConnectionInfo>();
             ControlFlowOutputID SelectedOutput = new ControlFlowOutputID("@invalid");
             bool bContinueIteration = true;
             int counter = 0;
             while (bContinueIteration && counter < 9999999)
             {
+                // evaluate the iteration node
                 RunNodeEvaluation(IterNode, ref InputDatas, OutputDatas);
                 LastNumEvaluatedNodes++;
                 update_cached_pin_data(NextNodeHandle, NextNode, OutputDatas);
 
+                // get the current output sequence pin and continue values
                 OutputDatas.FindItemValueStrict<ControlFlowOutputID>(ControlFlowNode.SelectedOutputPathName, ref SelectedOutput);
                 OutputDatas.FindItemValueStrict<bool>(IterationNode.ContinueIterationName, ref bContinueIteration);
 
+                // if we are continuing, evaluate the graph path on the output sequence pin
                 if (bContinueIteration) {
                     OutputConnections.Clear();
                     Graph.FindConnectionsFrom(NextNodeHandle.Identifier, SelectedOutput.OutputPathName, ref OutputConnections, EConnectionType.Sequence);
@@ -293,7 +392,7 @@ namespace Gradientspace.NodeGraph
                 }
             }
 
-            // done iteration, follow 'finished' output
+            // now we are done the iteration, and return the final output sequenece pin/connection as the next-connection
             OutputConnections.Clear();
             Graph.FindConnectionsFrom(NextNodeHandle.Identifier, SelectedOutput.OutputPathName, ref OutputConnections, EConnectionType.Sequence);
             if (OutputConnections.Count == 1)
@@ -301,7 +400,8 @@ namespace Gradientspace.NodeGraph
         }
 
 
-
+		// Evaluate a ControlFlowNode-type node, eg like a branch, where there are multiple possible
+        // output sequence pins but only one will be followed
         protected void EvaluateControlFlowNode(
             NodeHandle NextNodeHandle,
             NodeBase NextNode,
@@ -326,22 +426,26 @@ namespace Gradientspace.NodeGraph
             List<NodeInputRequirement> RequiredInputs = new List<NodeInputRequirement>();
             NextNode.CollectOutputRequirements(RequiredOutputs, RequiredInputs);
 
-            // gather up the incoming data on those inputs
+            // gather up the incoming data on those inputs (which may evaluate non-sequence nodes!)
             NamedDataMap InputDatas = new NamedDataMap(RequiredInputs.Count);
             FetchInputDatas(NextNode, NextNodeHandle, RequiredInputs, InputDatas);
 
+            // populate output datamap
             NamedDataMap OutputDatas = new NamedDataMap(RequiredOutputs.Count);
             for (int i = 0; i < RequiredOutputs.Count; ++i)
                 OutputDatas.SetItem(i, RequiredOutputs[i], RequiredOutputTypes[i], null);
 
+            // evaluate the ControlFlow node
             RunNodeEvaluation(NextNode, ref InputDatas, OutputDatas);
             LastNumEvaluatedNodes++;
             update_cached_pin_data(NextNodeHandle, NextNode, OutputDatas);
 
+            // figure out which output sequence pin the evaluation returned
             ControlFlowOutputID SelectedOutput = new ControlFlowOutputID();
             OutputDatas.FindItemValueStrict<ControlFlowOutputID>(ControlFlowNode.SelectedOutputPathName, ref SelectedOutput);
             string PathName = SelectedOutput.OutputPathName;
 
+            // find the connection from that sequence pin, if it exists, and return it via NextConnection
             List<IConnectionInfo> OutputConnections = new List<IConnectionInfo>();
             Graph.FindConnectionsFrom(NextNodeHandle.Identifier, PathName, ref OutputConnections, EConnectionType.Sequence);
             if (OutputConnections.Count > 1)
@@ -351,6 +455,8 @@ namespace Gradientspace.NodeGraph
         }
 
 
+        // Standard Nodes have one input sequence pin and one output sequence pin, so all we are
+        // doing is evaluating the node and then returning the unambiguous output connection
         protected void EvaluateStandardNode(
             NodeHandle NextNodeHandle,
             NodeBase NextNode,
@@ -358,7 +464,8 @@ namespace Gradientspace.NodeGraph
         {
             NextConnection = IConnectionInfo.Invalid;
 
-            // figure out which outputs are in use (should query pins here)
+            // figure out which outputs are in use
+            // (note: probably ought to be checking which outputs are actually connected here...)
             List<string> RequiredOutputs = new List<string>();
             List<Type> RequiredOutputTypes = new List<Type>();
             foreach (NodeBase.NodeOutputInfo outputInfo in NextNode.Outputs) {
@@ -370,18 +477,21 @@ namespace Gradientspace.NodeGraph
             List<NodeInputRequirement> RequiredInputs = new List<NodeInputRequirement>();
             NextNode.CollectOutputRequirements(RequiredOutputs, RequiredInputs);
 
-            // gather up the incoming data on those inputs
+            // gather up the incoming data on those inputs (which may recursively evaluate non-sequence nodes!)
             NamedDataMap InputDatas = new NamedDataMap(RequiredInputs.Count);
             FetchInputDatas(NextNode, NextNodeHandle, RequiredInputs, InputDatas);
 
+            // populate the required-outputs datamap
             NamedDataMap OutputDatas = new NamedDataMap(RequiredOutputs.Count);
             for (int i = 0; i < RequiredOutputs.Count; ++i)
                 OutputDatas.SetItem(i, RequiredOutputs[i], RequiredOutputTypes[i], null);
 
+            // run the node evaluation and store the outputs in the cache
             RunNodeEvaluation(NextNode, ref InputDatas, OutputDatas);
             LastNumEvaluatedNodes++;
             update_cached_pin_data(NextNodeHandle, NextNode, OutputDatas);
 
+            // find the output connection if it exist and return via NextConnection
             List<IConnectionInfo> OutputConnections = new List<IConnectionInfo>();
             Graph.FindConnectionsFrom(NextNodeHandle.Identifier, "", ref OutputConnections, EConnectionType.Sequence);
             if (OutputConnections.Count > 1)
@@ -391,17 +501,24 @@ namespace Gradientspace.NodeGraph
         }
 
 
-        protected void FetchInputDatas(NodeBase Node, NodeHandle nodeHandle, List<NodeInputRequirement> RequiredInputs, NamedDataMap InputDatas)
+		// FetchInputDatas looks at a list of required input-pins at a Node, and gets the incoming data on each pin, and stores
+        // that (pin,datum) info in a NamedDataMap. There are various cases/complications because:
+        //   1) a pin might not be connected to anything, but have constant data defined on the input  (eg like a float or string input)
+        //   2) the output pin on the other side of the input pin connection may have it's data cached already
+        //   3) if the data isn't cached already, we need to recursively compute it (only possible for nodes that don't require a sequence connection, like math/etc)
+        //   4) we might need to apply automatic type conversions
+        // 
+		protected void FetchInputDatas(NodeBase Node, NodeHandle nodeHandle, List<NodeInputRequirement> RequiredInputs, /*inout*/ NamedDataMap InputDatas)
         {
             int NumInputs = RequiredInputs.Count;
             for (int k = 0; k < NumInputs; ++k)
             {
-                // find the connection to this input
+                // find the connection to this input, if one exists
                 string InputName = RequiredInputs[k].InputName;
-                Connection FoundConnection = Graph.FindDataConnectionForInput(nodeHandle, InputName);
+                BaseGraph.Connection FoundConnection = Graph.FindDataConnectionForInput(nodeHandle, InputName);
 
-                // if no connection, either use constant value or abort
-                if (FoundConnection == Connection.Invalid)
+                // if no connection, either use constant value stored on the pin, or abort for ths input (probably causes evaluation failure)
+                if (FoundConnection == BaseGraph.Connection.Invalid)
                 {
                     // try getting default value
                     (object? ConstantInputData, bool bIsDefined) = Graph.GetConstantValueForInput(nodeHandle, InputName);
@@ -415,6 +532,7 @@ namespace Gradientspace.NodeGraph
                     continue;
                 }
 
+                // find the type for the input
 				bool bFoundInputType = Graph.GetInputTypeForNode(nodeHandle, InputName, out GraphDataType inputDataType);
                 Debug.Assert(bFoundInputType == true);
 
@@ -422,10 +540,11 @@ namespace Gradientspace.NodeGraph
 				bool bFoundOutputType = Graph.GetOutputTypeForNode(FoundConnection.FromNode, FoundConnection.FromOutput, out GraphDataType outputDataType);
 				Debug.Assert(bFoundOutputType == true);
 
-				// if we have already computed the node on the other side of the connection, it's data should be in the pin cache
+				// if we have already computed the node on the other side of the connection, it's data should be in the output-pin cache
 				object? InputData = find_cached_pin_data(FoundConnection.FromNode, FoundConnection.FromOutput);
                 if (InputData != null)
                 {
+                    // we might need to convert the cached data to another type   (should that also be cached?? this could be expensive...)
                     try {
                         if (InputData.GetType() != inputDataType.DataType)
                             InputData = ApplyTypeConversionToInputType(InputData, outputDataType, inputDataType);
@@ -438,8 +557,8 @@ namespace Gradientspace.NodeGraph
                     continue;
                 }
 
-                // If we have not already computed that data, we can try to "pull" it. 
-                // This should only be done for nodes that do not require a sequence path though...?
+                // If we have not already computed and cached that data, we can try to "pull" it. 
+                // This should only be done for nodes that do not require a sequence path though...currently no way to detect that
 
                 InputData = RecursiveComputeNodeOutputData(FoundConnection.FromNode, FoundConnection.FromOutput);
                 if (InputData == null)
@@ -448,6 +567,7 @@ namespace Gradientspace.NodeGraph
                 }
                 else
                 {
+					// we might need to convert the computed data to another type
 					try
 					{
 						if (InputData.GetType() != inputDataType.DataType)
@@ -463,10 +583,12 @@ namespace Gradientspace.NodeGraph
         }
 
 
+        // convert data coming out of an output pin to the type required by an input pin, if possible
         protected object ApplyTypeConversionToInputType(object incomingData, in GraphDataType incomingDataType, in GraphDataType requiredInputType)
         {
             // TODO we could warn or disallow common conversions like float/double -> integral, or even check for out-of-range conversions...
 
+            // trivial cases - no conversion necessary, or direct C# assignment between types is possible
             Type incomingType = incomingData.GetType();
             if (incomingType == requiredInputType.DataType) 
                 return incomingData;
@@ -478,31 +600,43 @@ namespace Gradientspace.NodeGraph
                 return foundConversion!.Convert(incomingData);
 			}
 
-			// todo other kinds of casts?
+			// todo other kinds of C#-level casts?
 
+            // try standard IConvertible interface - this only converts to POD types so we possibly
+            // could avoid this test if the required type is an object/etc...
 			if (incomingData is IConvertible) {
                 object? converted = Convert.ChangeType(incomingData, requiredInputType.DataType);
                 if (converted != null)
                     incomingData = converted;
             }
 
+            // if we didn't convert we just return the input data and allow higher levels
+            // of the graph to throw an Exception/etc
             return incomingData;
         }
 
 
-
-        public object? RecursiveComputeNodeOutputData(INodeInfo nodeInfo, string OutputName)
-        {
-            return RecursiveComputeNodeOutputData(new NodeHandle(nodeInfo.Identifier), OutputName);
-        }
+        // given a Node and an Output data pin, this function tries to recursively evaluate that Node 
+        // and any upstream nodes to make sure that OutputName is available. IE this basically implements
+        // "pull"/dataflow evaluation. This is called by FetchInputDatas(), which is the place where
+        // we might discover that we need data we do not have.
+        //
+        // The assumption is that no Sequence pins/connections are involved.
+        // Currently this is not enforced
+        //
+        // Note that any output pins/data calculated here will be cached
         public object? RecursiveComputeNodeOutputData(NodeHandle TargetNodeHandle, string OutputName)
         {
+            // find our node
             NodeBase? FoundNode = Graph.FindNodeFromHandle(TargetNodeHandle);
             if (FoundNode == null)
                 throw new Exception("RecursiveComputeNodeOutputData: could not find TargetNodeHandle");
 
-            if (EnableDebugging) DebugManager.Instance.MarkNodeTouchedThisFrame(TargetNodeHandle.Identifier);
+            // any nodes evaluated in this function are evaluated "with" a node-eval frame in the sequenece path
+            if (EnableDebugging) 
+                DebugManager.Instance.MarkNodeTouchedThisFrame(TargetNodeHandle.Identifier);
 
+            // find the output pin on the node given it's OutputName. 
             INodeOutput? FoundOutput = null;
             GraphDataType OutputDataType = GraphDataType.Default;
             List<string> Outputs = new List<string>();
@@ -520,11 +654,15 @@ namespace Gradientspace.NodeGraph
                 Outputs.Add(OutputName);
             }
 
+            // note this code squenece is very similar to EvaluateStandardNode(), possibly refactorable?
+
+            // collect up required inputs to evaluate our output
             List<NodeInputRequirement> RequiredInputs = new List<NodeInputRequirement>();
             FoundNode.CollectOutputRequirements(Outputs, RequiredInputs);
             int NumInputs = RequiredInputs.Count;
 
-            // we are going to fetch the value for each input and store it in this map
+            // fetch the incoming data for each input and store it in this map. This is where
+            // recursive calls to ourself (RecursiveComputeNodeOutputData) may occur.
             NamedDataMap InputDatas = new NamedDataMap(NumInputs);
             FetchInputDatas(FoundNode, TargetNodeHandle, RequiredInputs, InputDatas);
 
@@ -533,15 +671,19 @@ namespace Gradientspace.NodeGraph
             for (int i = 0; i < Outputs.Count; ++i)
                 OutputDatas.SetItem(i, Outputs[i], OutputDataType.DataType, null);
 
+            // run the node evaluation and store the outputs in the cache
             RunNodeEvaluation(FoundNode, ref InputDatas, OutputDatas);
             LastNumEvaluatedNodes++;
-
             update_cached_pin_data(TargetNodeHandle, FoundNode, OutputDatas);
 
+            // return the data object that came back from evaluation on the output pin
             object? Result = OutputDatas.FindItemValue(OutputName);
             return Result;
         }
-
+        public object? RecursiveComputeNodeOutputData(INodeInfo nodeInfo, string OutputName)
+        {
+	        return RecursiveComputeNodeOutputData(new NodeHandle(nodeInfo.Identifier), OutputName);
+        }
 
 
         internal class EvaluationAbortedException : Exception
