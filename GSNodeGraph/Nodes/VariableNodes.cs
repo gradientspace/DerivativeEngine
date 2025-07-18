@@ -16,25 +16,31 @@ namespace Gradientspace.NodeGraph
 
 		public const string NameInputName = "Name";
 		public const string TypeInputName = "Type";
-		public const string ObjectOutputName = "Object";
+		public const string AllocateObjectInputName = "Make New";
+		public const string InitialValueInputName = "InitialValue";
+
+		public const string OutputName = "Value";
 
 		ClassTypeNodeInput TypeInput;
+		StandardNodeInputWithConstant<bool>? AllocateObjectInput;
+		INodeInput? InitialValueInput = null;
 
 		public CreateGlobalVariableNode()
 		{
 			AddInput(NameInputName, new StandardNodeInputBaseWithConstant(typeof(string), ""));
 
-			TypeInput = new ClassTypeNodeInput() { ConstantValue = typeof(bool) };
+			Type initialType = typeof(bool);
+			TypeInput = new ClassTypeNodeInput() { ConstantValue = initialType };
 			TypeInput.Flags |= ENodeInputFlags.IsNodeConstant;
 			TypeInput.ConstantTypeModifiedEvent += TypeInput_ConstantTypeModifiedEvent;
 			AddInput(TypeInputName, TypeInput);
 
-			updateOutputs();
+			updateInputsAndOutputs();
 		}
 
 		private void TypeInput_ConstantTypeModifiedEvent(ClassTypeNodeInput input, Type newType)
 		{
-			updateOutputs();
+			updateInputsAndOutputs();
 			PublishNodeModifiedNotification();
 		}
 
@@ -43,12 +49,34 @@ namespace Gradientspace.NodeGraph
 			TypeInput.SetConstantValue(objectType);
 		}
 
-		protected virtual void updateOutputs()
+		protected virtual void updateInputsAndOutputs()
 		{
-			Outputs.Clear();
+			Type variableType = TypeInput.ConstantValue;
+			INodeInput? newInput = FunctionNodeUtils.BuildInputNodeForType(variableType, null);
+			if (InitialValueInput == null) 
+				AddInput(InitialValueInputName, newInput);
+			else
+				ReplaceInput(InitialValueInputName, newInput);
+			InitialValueInput = newInput;
 
+			bool bCanAllocate = TypeUtils.IsNullableType(variableType)
+				&& (TypeUtils.FindParameterlessConstructorForType(variableType) != null);
+			// todo should only show this if we don't have connection on input pin...
+			if (bCanAllocate && AllocateObjectInput == null)
+			{
+				AllocateObjectInput = new StandardNodeInputWithConstant<bool>(true);
+				AllocateObjectInput.Flags |= ENodeInputFlags.IsNodeConstant;
+				AddInput(AllocateObjectInputName, AllocateObjectInput);
+			} 
+			else if (bCanAllocate == false && AllocateObjectInput != null)
+			{
+				RemoveInput(AllocateObjectInputName);
+				AllocateObjectInput = null;
+			}
+
+			Outputs.Clear();
 			Type activeType = TypeInput.ConstantValue;
-			AddOutput(ObjectOutputName, new StandardNodeOutputBase(activeType));
+			AddOutput(OutputName, new StandardNodeOutputBase(activeType));
 		}
 
 		public override void Evaluate(EvaluationContext EvalContext,  ref readonly NamedDataMap DataIn, NamedDataMap RequestedDataOut)
@@ -59,25 +87,28 @@ namespace Gradientspace.NodeGraph
 			if (EvalContext.Variables.CanCreateVariable(VariableName, StandardVariables.GlobalScope) == false)
 				throw new Exception($"CreateGlobalVariableNode: global variable named {VariableName} already exists!");
 
-			object? newObject = null;
-
 			Type activeType = TypeInput.ConstantValue;
-			Func<object>? UseConstructor = TypeUtils.FindParameterlessConstructorForType(activeType);
-			if (UseConstructor != null) {
-				newObject = UseConstructor();
-			} else {
-				// this works for types that have no parameterless constructor like float, double, etc
-				// would it always do what the above does?
-				newObject = Activator.CreateInstance(activeType);
+
+			// try to find defined initial value - may come back null...
+			object? initialValue = DataIn.FindItemValueAsType(InitialValueInputName, activeType);
+
+			bool bAllocateIfMissing = (AllocateObjectInput != null) ? AllocateObjectInput.ConstantValue : true;
+			if (initialValue == null && bAllocateIfMissing)
+			{ 
+				Func<object>? UseConstructor = TypeUtils.FindParameterlessConstructorForType(activeType);
+				if (UseConstructor != null) {
+					initialValue = UseConstructor();
+				} else {
+					// this works for types that have no parameterless constructor like float, double, etc
+					// would it always do what the above does?
+					initialValue = Activator.CreateInstance(activeType);
+				}
 			}
 
-			if (newObject == null)
-				throw new Exception("CreateGlobalVariableNode: could not create new instance of type " + activeType.FullName);
-
 			// create variable in graph...
-			EvalContext.Variables.CreateVariable(VariableName, activeType, newObject, StandardVariables.GlobalScope);
+			EvalContext.Variables.CreateVariable(VariableName, activeType, initialValue, StandardVariables.GlobalScope);
 
-			RequestedDataOut.SetItemValueChecked(ObjectOutputName, newObject);
+			RequestedDataOut.SetItemValueOrNull_Checked(OutputName, initialValue);
 		}
 	}
 
