@@ -109,6 +109,27 @@ namespace Gradientspace.NodeGraph
     }
 
 
+	// StandardNodeInputWithConstant<T> does not work with string because it's not a struct
+    // but has value semantics...
+	public class StandardStringNodeInput : StandardNodeInput<string>
+	{
+		public string ConstantValue;
+
+		public override (object?, bool) GetConstantValue()
+		{
+			return (ConstantValue, true);
+		}
+
+		public override void SetConstantValue(object NewValue)
+		{
+			ConstantValue = (string)NewValue;
+		}
+
+		public StandardStringNodeInput(string initialValue = "")
+		{
+			ConstantValue = initialValue;
+		}
+	}
 
 
 

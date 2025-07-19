@@ -7,14 +7,44 @@ using System.Threading.Tasks;
 namespace Gradientspace.NodeGraph
 {
 
+	/**
+	 * Base class for nodes that define new variables in the graph.
+	 * This allows things like static graph analysis to detect those variables
+	 * and access their names/types
+	 */
+	[SystemNode]
+	public abstract class DefineVariableBaseNode : NodeBase
+	{
+		public const string NameInputName = "Name";
+		public const string VARIABLE_NAME_UNDEFINED = "::unknown::";
+
+		protected StandardStringNodeInput? NameInput = null;
+
+
+		public virtual string GetVariableName()
+		{
+			return NameInput?.ConstantValue ?? VARIABLE_NAME_UNDEFINED;
+		}
+
+		protected void AddNameInput()
+		{
+			// todo handle call multiple times?
+			NameInput = new StandardStringNodeInput("(name)");
+			// variable name needs to be node-constant to allow for static analysis...
+			NameInput.Flags |= ENodeInputFlags.IsNodeConstant;
+			AddInput(NameInputName, NameInput);
+			// todo notification event
+		}
+
+	}
+
 
 	[GraphNodeNamespace("Gradientspace.Core")]
 	[GraphNodeUIName("New Global Variable")]
-	public class CreateGlobalVariableNode : NodeBase
+	public class CreateGlobalVariableNode : DefineVariableBaseNode
 	{
 		public override string GetDefaultNodeName() { return "New Global Variable"; }
 
-		public const string NameInputName = "Name";
 		public const string TypeInputName = "Type";
 		public const string AllocateObjectInputName = "Make New";
 		public const string InitialValueInputName = "InitialValue";
@@ -27,7 +57,7 @@ namespace Gradientspace.NodeGraph
 
 		public CreateGlobalVariableNode()
 		{
-			AddInput(NameInputName, new StandardNodeInputBaseWithConstant(typeof(string), ""));
+			base.AddNameInput();
 
 			Type initialType = typeof(bool);
 			TypeInput = new ClassTypeNodeInput() { ConstantValue = initialType };
@@ -37,6 +67,7 @@ namespace Gradientspace.NodeGraph
 
 			updateInputsAndOutputs();
 		}
+
 
 		private void TypeInput_ConstantTypeModifiedEvent(ClassTypeNodeInput input, Type newType)
 		{
