@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
+using static System.Formats.Asn1.AsnWriter;
 
 namespace Gradientspace.NodeGraph
 {
@@ -10,6 +12,8 @@ namespace Gradientspace.NodeGraph
 	{
 		public bool CanCreateVariable(string Name, string Scope = "");
 		public bool CreateVariable(string Name, Type type, object? initialValue = null, string Scope = "");
+		public bool SetVariable(string Name, object? newValue, string Scope = "");
+		public object? GetVariable(string Name, string Scope = "");
 	}
 
 	public class EvaluationContext
@@ -50,6 +54,31 @@ namespace Gradientspace.NodeGraph
 			Variables.Add(key, v);
 			return true;
 		}
+
+
+		public virtual bool SetVariable(string Name, object? newValue, string Scope = "")
+		{
+			string key = $"{Scope}:{Name}";
+			if ( Variables.TryGetValue(key, out Variable? var) )
+			{
+				var.Value = newValue;
+				return true;
+			}
+			throw new Exception($"[SetVariable] variable {Name} in Scope {Scope} not found");
+		}
+
+
+		public virtual object? GetVariable(string Name, string Scope = "")
+		{
+			string key = $"{Scope}:{Name}";
+			if (Variables.TryGetValue(key, out Variable? var))
+			{
+				return var.Value;
+			}
+			throw new Exception($"[SetVariable] variable {Name} in Scope {Scope} not found");
+		}
+
+
 
 	}
 

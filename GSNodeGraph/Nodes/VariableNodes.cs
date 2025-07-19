@@ -114,4 +114,134 @@ namespace Gradientspace.NodeGraph
 
 
 
+
+
+	[GraphNodeNamespace("Gradientspace.Core")]
+	[GraphNodeUIName("Set Global Variable")]
+	public class SetGlobalVariableNode : NodeBase
+	{
+		public override string GetDefaultNodeName() { return "Set Global Variable"; }
+
+		public const string NameInputName = "Name";
+		public const string TypeInputName = "Type";
+		public const string ValueInputName = "Value";
+
+		public const string OutputName = "Value";
+
+		ClassTypeNodeInput TypeInput;
+		INodeInput? InitialValueInput = null;
+
+		public SetGlobalVariableNode()
+		{
+			AddInput(NameInputName, new StandardNodeInputBaseWithConstant(typeof(string), ""));
+
+			Type initialType = typeof(object);
+			TypeInput = new ClassTypeNodeInput() { ConstantValue = initialType };
+			TypeInput.Flags |= ENodeInputFlags.IsNodeConstant;
+			TypeInput.ConstantTypeModifiedEvent += TypeInput_ConstantTypeModifiedEvent;
+			AddInput(TypeInputName, TypeInput);
+
+			updateInputsAndOutputs();
+		}
+
+		private void TypeInput_ConstantTypeModifiedEvent(ClassTypeNodeInput input, Type newType)
+		{
+			updateInputsAndOutputs();
+			PublishNodeModifiedNotification();
+		}
+
+		public virtual void Initialize(Type objectType)
+		{
+			TypeInput.SetConstantValue(objectType);
+		}
+
+		protected virtual void updateInputsAndOutputs()
+		{
+			Type variableType = TypeInput.ConstantValue;
+			INodeInput? newInput = FunctionNodeUtils.BuildInputNodeForType(variableType, null);
+			if (InitialValueInput == null) 
+				AddInput(ValueInputName, newInput);
+			else
+				ReplaceInput(ValueInputName, newInput);
+			InitialValueInput = newInput;
+
+			Outputs.Clear();
+			Type activeType = TypeInput.ConstantValue;
+			AddOutput(OutputName, new StandardNodeOutputBase(activeType));
+		}
+
+		public override void Evaluate(EvaluationContext EvalContext,  ref readonly NamedDataMap DataIn, NamedDataMap RequestedDataOut)
+		{
+			string VariableName = "";
+			DataIn.FindItemValueStrict<string>(NameInputName, ref VariableName, true);      // throws if not found
+
+			Type variableType = TypeInput.ConstantValue;
+
+			object? newValue = DataIn.FindItemValueAsType(ValueInputName, variableType);
+			EvalContext.Variables.SetVariable(VariableName, newValue, StandardVariables.GlobalScope);
+			RequestedDataOut.SetItemValueOrNull_Checked(OutputName, newValue);
+		}
+	}
+
+
+
+
+	[GraphNodeNamespace("Gradientspace.Core")]
+	[GraphNodeUIName("Get Global Variable")]
+	public class GetGlobalVariableNode : NodeBase
+	{
+		public override string GetDefaultNodeName() { return "Get Global Variable"; }
+
+		public const string NameInputName = "Name";
+		public const string TypeInputName = "Type";
+
+		public const string OutputName = "Value";
+
+		ClassTypeNodeInput TypeInput;
+
+		public GetGlobalVariableNode()
+		{
+			AddInput(NameInputName, new StandardNodeInputBaseWithConstant(typeof(string), ""));
+
+			Type initialType = typeof(object);
+			TypeInput = new ClassTypeNodeInput() { ConstantValue = initialType };
+			TypeInput.Flags |= ENodeInputFlags.IsNodeConstant;
+			TypeInput.ConstantTypeModifiedEvent += TypeInput_ConstantTypeModifiedEvent;
+			AddInput(TypeInputName, TypeInput);
+
+			updateInputsAndOutputs();
+		}
+
+		private void TypeInput_ConstantTypeModifiedEvent(ClassTypeNodeInput input, Type newType)
+		{
+			updateInputsAndOutputs();
+			PublishNodeModifiedNotification();
+		}
+
+		public virtual void Initialize(Type objectType)
+		{
+			TypeInput.SetConstantValue(objectType);
+		}
+
+		protected virtual void updateInputsAndOutputs()
+		{
+			Type variableType = TypeInput.ConstantValue;
+
+			Outputs.Clear();
+			Type activeType = TypeInput.ConstantValue;
+			AddOutput(OutputName, new StandardNodeOutputBase(activeType));
+		}
+
+		public override void Evaluate(EvaluationContext EvalContext, ref readonly NamedDataMap DataIn, NamedDataMap RequestedDataOut)
+		{
+			string VariableName = "";
+			DataIn.FindItemValueStrict<string>(NameInputName, ref VariableName, true);      // throws if not found
+
+			object? curValue = EvalContext.Variables.GetVariable(VariableName, StandardVariables.GlobalScope);
+			RequestedDataOut.SetItemValueOrNull_Checked(OutputName, curValue);
+		}
+	}
+
+
+
 }
