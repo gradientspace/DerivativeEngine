@@ -18,13 +18,15 @@ namespace Gradientspace.NodeGraph
 		public const string NameInputName = "Name";
 		public const string VARIABLE_NAME_UNDEFINED = "::unknown::";
 
-		protected StandardStringNodeInput? NameInput = null;
-
+		// subclasses must implement...
+		public abstract Type GetVariableType();
 
 		public virtual string GetVariableName()
 		{
 			return NameInput?.ConstantValue ?? VARIABLE_NAME_UNDEFINED;
 		}
+
+		protected StandardStringNodeInput? NameInput = null;
 
 		protected void AddNameInput()
 		{
@@ -69,6 +71,11 @@ namespace Gradientspace.NodeGraph
 		}
 
 
+		public override Type GetVariableType()
+		{
+			return TypeInput.ConstantValue;
+		}
+
 		private void TypeInput_ConstantTypeModifiedEvent(ClassTypeNodeInput input, Type newType)
 		{
 			updateInputsAndOutputs();
@@ -82,7 +89,7 @@ namespace Gradientspace.NodeGraph
 
 		protected virtual void updateInputsAndOutputs()
 		{
-			Type variableType = TypeInput.ConstantValue;
+			Type variableType = GetVariableType();
 			INodeInput? newInput = FunctionNodeUtils.BuildInputNodeForType(variableType, null);
 			if (InitialValueInput == null) 
 				AddInput(InitialValueInputName, newInput);
@@ -106,8 +113,7 @@ namespace Gradientspace.NodeGraph
 			}
 
 			Outputs.Clear();
-			Type activeType = TypeInput.ConstantValue;
-			AddOutput(OutputName, new StandardNodeOutputBase(activeType));
+			AddOutput(OutputName, new StandardNodeOutputBase(variableType));
 		}
 
 		public override void Evaluate(EvaluationContext EvalContext,  ref readonly NamedDataMap DataIn, NamedDataMap RequestedDataOut)
@@ -118,26 +124,26 @@ namespace Gradientspace.NodeGraph
 			if (EvalContext.Variables.CanCreateVariable(VariableName, StandardVariables.GlobalScope) == false)
 				throw new Exception($"CreateGlobalVariableNode: global variable named {VariableName} already exists!");
 
-			Type activeType = TypeInput.ConstantValue;
+			Type variableType = GetVariableType();
 
 			// try to find defined initial value - may come back null...
-			object? initialValue = DataIn.FindItemValueAsType(InitialValueInputName, activeType);
+			object? initialValue = DataIn.FindItemValueAsType(InitialValueInputName, variableType);
 
 			bool bAllocateIfMissing = (AllocateObjectInput != null) ? AllocateObjectInput.ConstantValue : true;
 			if (initialValue == null && bAllocateIfMissing)
 			{ 
-				Func<object>? UseConstructor = TypeUtils.FindParameterlessConstructorForType(activeType);
+				Func<object>? UseConstructor = TypeUtils.FindParameterlessConstructorForType(variableType);
 				if (UseConstructor != null) {
 					initialValue = UseConstructor();
 				} else {
 					// this works for types that have no parameterless constructor like float, double, etc
 					// would it always do what the above does?
-					initialValue = Activator.CreateInstance(activeType);
+					initialValue = Activator.CreateInstance(variableType);
 				}
 			}
 
 			// create variable in graph...
-			EvalContext.Variables.CreateVariable(VariableName, activeType, initialValue, StandardVariables.GlobalScope);
+			EvalContext.Variables.CreateVariable(VariableName, variableType, initialValue, StandardVariables.GlobalScope);
 
 			RequestedDataOut.SetItemValueOrNull_Checked(OutputName, initialValue);
 		}
