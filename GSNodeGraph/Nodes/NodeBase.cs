@@ -174,7 +174,9 @@ namespace Gradientspace.NodeGraph
         // 
         public string GetNodeName()     
         {
-            return GetDefaultNodeName();
+            //return GetDefaultNodeName();
+            // returns default node name unless a custom name has been defined
+            return GetCustomNodeName();
         }
         public IEnumerable<INodeInputInfo> EnumerateInputs()
         {
