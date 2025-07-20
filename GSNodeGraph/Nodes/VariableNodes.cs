@@ -151,68 +151,169 @@ namespace Gradientspace.NodeGraph
 
 
 
-
-
-	[GraphNodeNamespace("Gradientspace.Core")]
-	[GraphNodeUIName("Set Global Variable")]
-	public class SetGlobalVariableNode : NodeBase
+	// base class for variable get/set nodes, that by default have
+	// constant Name and Type inputs
+	[SystemNode]
+	public abstract class AccessVariableNode : NodeBase
 	{
-		public override string GetDefaultNodeName() { return "Set Global Variable"; }
-
 		public const string NameInputName = "Name";
 		public const string TypeInputName = "Type";
-		public const string ValueInputName = "Value";
-
 		public const string OutputName = "Value";
 
-		ClassTypeNodeInput TypeInput;
-		INodeInput? InitialValueInput = null;
+		protected bool bMinimalDisplay = false;
+		protected StandardStringNodeInput? NameInput = null;
+		protected ClassTypeNodeInput? TypeInput;
 
-		public SetGlobalVariableNode()
+		public AccessVariableNode()
 		{
-			AddInput(NameInputName, new StandardNodeInputBaseWithConstant(typeof(string), ""));
+			AddNameInput();
+			AddTypeInput();
+			updateInputsAndOutputs();
+		}
 
+		public virtual void Initialize(Type VariableType)
+		{
+			TypeInput?.SetConstantValue(VariableType);
+		}
+
+		public virtual void Initialize(string VariableName, Type VariableType, bool bEnableMinimalDisplay)
+		{
+			NameInput?.SetConstantValue(VariableName);
+			TypeInput?.SetConstantValue(VariableType);
+			SetMinimalDisplay(bEnableMinimalDisplay);
+		}
+
+		public virtual void SetMinimalDisplay(bool bEnabled)
+		{
+			bMinimalDisplay = bEnabled;
+			if (bMinimalDisplay)
+			{
+				if (TypeInput != null) TypeInput.Flags |= ENodeInputFlags.Hidden;
+				if (NameInput != null) NameInput.Flags |= ENodeInputFlags.Hidden;
+			} 
+			else
+			{
+				if (TypeInput != null) TypeInput.Flags &= ~ENodeInputFlags.Hidden;
+				if (NameInput != null) NameInput.Flags &= ~ENodeInputFlags.Hidden;
+			}
+		}
+
+		public virtual string GetVariableName()
+		{
+			return NameInput?.ConstantValue ?? DefineVariableBaseNode.VARIABLE_NAME_UNDEFINED;
+		}
+
+		public virtual Type GetVariableType()
+		{
+			return TypeInput?.ConstantValue ?? typeof(object);
+		}
+
+		public virtual bool IsStaticallyDefined() 
+		{
+			return ((NameInput?.Flags & ENodeInputFlags.IsNodeConstant) != 0)
+				&& ((TypeInput?.Flags & ENodeInputFlags.IsNodeConstant) != 0);
+		}
+
+		public void EnableGraphDefinedInputs()
+		{
+			// idea here is to clear the IsNodeConstant flags on Name and Type, which would
+			// allow them to be defined via the graph (ie for dynamically-defined variables).
+			// However this means they need to be ignored in static analysis, etc...needs some other work
+			System.Diagnostics.Debug.Assert(false);
+		}
+
+
+		protected void AddNameInput()
+		{
+			// todo handle call multiple times?
+			NameInput = new StandardStringNodeInput("(name)");
+			// variable name needs to be node-constant to allow for static analysis...
+			NameInput.Flags |= ENodeInputFlags.IsNodeConstant;
+			AddInput(NameInputName, NameInput);
+			// todo notification event
+		}
+
+		protected void AddTypeInput()
+		{
 			Type initialType = typeof(object);
 			TypeInput = new ClassTypeNodeInput() { ConstantValue = initialType };
 			TypeInput.Flags |= ENodeInputFlags.IsNodeConstant;
 			TypeInput.ConstantTypeModifiedEvent += TypeInput_ConstantTypeModifiedEvent;
 			AddInput(TypeInputName, TypeInput);
-
-			updateInputsAndOutputs();
 		}
 
-		private void TypeInput_ConstantTypeModifiedEvent(ClassTypeNodeInput input, Type newType)
+		protected void TypeInput_ConstantTypeModifiedEvent(ClassTypeNodeInput input, Type newType)
 		{
 			updateInputsAndOutputs();
 			PublishNodeModifiedNotification();
 		}
 
-		public virtual void Initialize(Type objectType)
-		{
-			TypeInput.SetConstantValue(objectType);
-		}
-
 		protected virtual void updateInputsAndOutputs()
 		{
-			Type variableType = TypeInput.ConstantValue;
+			Type variableType = GetVariableType();
+
+			Outputs.Clear();
+			AddOutput(OutputName, new StandardNodeOutputBase(variableType));
+		}
+
+
+		public const string MinimizedString = "bMinimalDisplay";
+		public override void CollectCustomDataItems(out List<Tuple<string, object>>? DataItems) {
+			DataItems = new List<Tuple<string, object>>() { new(MinimizedString, bMinimalDisplay ? "True" : "False") };
+			//DataItems.Add(new(MinimizedString, bMinimalDisplay));
+		}
+		public override void RestoreCustomDataItems(List<Tuple<string, object>> DataItems) {
+			foreach (var value in DataItems) {
+				if (value.Item1 == MinimizedString && value.Item2.ToString() == "True")
+					SetMinimalDisplay(true);
+			}
+		}
+	}
+
+
+
+	[GraphNodeNamespace("Gradientspace.Core")]
+	[GraphNodeUIName("Set Global Variable")]
+	public class SetGlobalVariableNode : AccessVariableNode
+	{
+		public override string GetDefaultNodeName() { return "Set Global Variable"; }
+		public override string GetCustomNodeName()
+		{
+			if (base.bMinimalDisplay)
+				return $"Set {GetVariableName()}";
+			return GetDefaultNodeName();
+		}
+
+
+		public const string ValueInputName = "Value";
+		protected INodeInput? ValueInput = null;
+
+		public SetGlobalVariableNode() : base()
+		{
+		}
+
+		protected override void updateInputsAndOutputs()
+		{
+			base.updateInputsAndOutputs();
+
+			// add value input
+			Type variableType = GetVariableType();
 			INodeInput? newInput = FunctionNodeUtils.BuildInputNodeForType(variableType, null);
-			if (InitialValueInput == null) 
+			if (ValueInput == null) 
 				AddInput(ValueInputName, newInput);
 			else
 				ReplaceInput(ValueInputName, newInput);
-			InitialValueInput = newInput;
-
-			Outputs.Clear();
-			Type activeType = TypeInput.ConstantValue;
-			AddOutput(OutputName, new StandardNodeOutputBase(activeType));
+			ValueInput = newInput;
 		}
 
 		public override void Evaluate(EvaluationContext EvalContext,  ref readonly NamedDataMap DataIn, NamedDataMap RequestedDataOut)
 		{
+			// note if this is node-constant we can just get it from GetVariableName()...
 			string VariableName = "";
 			DataIn.FindItemValueStrict<string>(NameInputName, ref VariableName, true);      // throws if not found
 
-			Type variableType = TypeInput.ConstantValue;
+			// if not node-constant we would have to get it from DataIn here...
+			Type variableType = GetVariableType();
 
 			object? newValue = DataIn.FindItemValueAsType(ValueInputName, variableType);
 			EvalContext.Variables.SetVariable(VariableName, newValue, StandardVariables.GlobalScope);
@@ -225,52 +326,23 @@ namespace Gradientspace.NodeGraph
 
 	[GraphNodeNamespace("Gradientspace.Core")]
 	[GraphNodeUIName("Get Global Variable")]
-	public class GetGlobalVariableNode : NodeBase
+	public class GetGlobalVariableNode : AccessVariableNode
 	{
 		public override string GetDefaultNodeName() { return "Get Global Variable"; }
-
-		public const string NameInputName = "Name";
-		public const string TypeInputName = "Type";
-
-		public const string OutputName = "Value";
-
-		ClassTypeNodeInput TypeInput;
-
-		public GetGlobalVariableNode()
+		public override string GetCustomNodeName()
 		{
-			AddInput(NameInputName, new StandardNodeInputBaseWithConstant(typeof(string), ""));
-
-			Type initialType = typeof(object);
-			TypeInput = new ClassTypeNodeInput() { ConstantValue = initialType };
-			TypeInput.Flags |= ENodeInputFlags.IsNodeConstant;
-			TypeInput.ConstantTypeModifiedEvent += TypeInput_ConstantTypeModifiedEvent;
-			AddInput(TypeInputName, TypeInput);
-
-			updateInputsAndOutputs();
+			if (base.bMinimalDisplay)
+				return $"Get {GetVariableName()}";
+			return GetDefaultNodeName();
 		}
 
-		private void TypeInput_ConstantTypeModifiedEvent(ClassTypeNodeInput input, Type newType)
+		public GetGlobalVariableNode() : base()
 		{
-			updateInputsAndOutputs();
-			PublishNodeModifiedNotification();
-		}
-
-		public virtual void Initialize(Type objectType)
-		{
-			TypeInput.SetConstantValue(objectType);
-		}
-
-		protected virtual void updateInputsAndOutputs()
-		{
-			Type variableType = TypeInput.ConstantValue;
-
-			Outputs.Clear();
-			Type activeType = TypeInput.ConstantValue;
-			AddOutput(OutputName, new StandardNodeOutputBase(activeType));
 		}
 
 		public override void Evaluate(EvaluationContext EvalContext, ref readonly NamedDataMap DataIn, NamedDataMap RequestedDataOut)
 		{
+			// note if this is node-constant we can just get it from GetVariableName()...
 			string VariableName = "";
 			DataIn.FindItemValueStrict<string>(NameInputName, ref VariableName, true);      // throws if not found
 
