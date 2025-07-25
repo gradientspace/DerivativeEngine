@@ -211,7 +211,7 @@ namespace Gradientspace.NodeGraph
 		public virtual bool IsStaticallyDefined() 
 		{
 			return ((NameInput?.Flags & ENodeInputFlags.IsNodeConstant) != 0)
-				&& ((TypeInput?.Flags & ENodeInputFlags.IsNodeConstant) != 0);
+				&& ((TypeInput?.Flags & ENodeInputFlags.Hidden) != 0);
 		}
 
 		public void EnableGraphDefinedInputs()

@@ -244,6 +244,13 @@ namespace Gradientspace.NodeGraph
         public virtual void RestoreCustomDataItems(List<Tuple<string, object>> DataItems) { }
 
 
+
+
+		public override string ToString()
+		{
+            return $"{GetDefaultNodeName()} ({GetType().ToString()})";
+		}
+
     }
 
 

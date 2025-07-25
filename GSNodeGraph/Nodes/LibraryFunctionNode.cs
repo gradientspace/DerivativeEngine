@@ -110,7 +110,11 @@ namespace Gradientspace.NodeGraph
                 RequestedDataOut.SetItemValue(ReturnIndex, returnObj);
         }
 
-    }
+		public override string ToString()
+		{
+			return $"{LibraryClass!.Name}.{Function!.Name}";
+		}
+	}
 
 
 
@@ -136,6 +140,11 @@ namespace Gradientspace.NodeGraph
 
             // TODO this is dumb, we should share Arguments construction between copies...
             return new LibraryFunctionNode(LibraryClass!, Function!, NodeName);
+        }
+
+		public override string ToString()
+		{
+            return NodeName + $" ({base.ToString()})";
         }
     }
 
