@@ -14,7 +14,10 @@ namespace Gradientspace.NodeGraph.Nodes
         public GenericPODConstantNode()
         {
             AddOutput(ValueOutputName, new StandardNodeOutput<T>());
-            AddInput(ValueInputName, new StandardNodeInputWithConstant<T>( new T() ));
+
+			StandardNodeInputBase input = new StandardNodeInputWithConstant<T>(new T());
+            input.Flags = ENodeInputFlags.IsNodeConstant;
+			AddInput(ValueInputName, input);
         }
 
         public static string ValueOutputName { get { return "Value"; } }
@@ -76,7 +79,9 @@ namespace Gradientspace.NodeGraph.Nodes
         public StringConstantNode()
         {
             AddOutput(ValueOutputName, new StandardNodeOutput<string>());
-            AddInput(ValueInputName, new StandardNodeInputBaseWithConstant(typeof(string), ""));
+			StandardStringNodeInput input = new StandardStringNodeInput();
+            input.Flags = ENodeInputFlags.IsNodeConstant;
+			AddInput(ValueInputName, input);
         }
 
         public static string ValueOutputName { get { return "String"; } }
