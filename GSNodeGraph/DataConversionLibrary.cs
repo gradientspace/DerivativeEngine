@@ -1,7 +1,6 @@
 // Copyright Gradientspace Corp. All Rights Reserved.
 using System;
 using System.Reflection;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Gradientspace.NodeGraph
 {

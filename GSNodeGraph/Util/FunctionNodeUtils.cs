@@ -98,7 +98,7 @@ namespace Gradientspace.NodeGraph
                 bool bIsRefParam = paramType.IsByRef && (paramInfo.IsOut == false);
                 Type baseType = (bIsRefParam || paramInfo.IsOut) ? paramType.GetElementType()! : paramType;        // strip off &
                 Type? realType = System.Nullable.GetUnderlyingType(paramType);
-                bool bIsNullable = (realType != null);
+                bool bIsNullable = (realType != null);      // todo can use TypeUtils.IsNullableType(paramType) here? but need to check realType behavior...
                 if (bIsRefParam && bIsNullable)
                     throw new Exception("LibraryFunctionNode.buildArguments(): nullable ref parameters are not currently supported.");
 
