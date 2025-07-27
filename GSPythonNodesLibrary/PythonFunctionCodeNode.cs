@@ -112,24 +112,20 @@ namespace Gradientspace.NodeGraph.PythonNodes
 
 		public const string CodeTextString = "CodeText";
 		public const string CodeLanguageString = "Language";
-		public override void CollectCustomDataItems(out List<Tuple<string, object>>? DataItems)
+		public override void CollectCustomDataItems(out NodeCustomData? DataItems)
 		{
-			DataItems = new List<Tuple<string, object>>();
-			DataItems.Add(new(CodeTextString, SourceCode.CodeText));
-			DataItems.Add(new(CodeLanguageString, SourceCode.CodeLanguage.ToString()));
-		}
-		public override void RestoreCustomDataItems(List<Tuple<string, object>> DataItems)
+            DataItems = new NodeCustomData().
+                AddStringItem(CodeTextString, SourceCode.CodeText).
+                AddEnumItem(CodeLanguageString, SourceCode.CodeLanguage);
+        }
+		public override void RestoreCustomDataItems(NodeCustomData DataItems)
 		{
-			Tuple<string, object>? CodeString = DataItems.Find((x) => { return x.Item1 == CodeTextString; });
+            var Language = DataItems.FindEnumItemOrDefault(CodeLanguageString, SourceCodeDataType.Language.CSharp);
+            Debug.Assert(Language == SourceCodeDataType.Language.Python);
 
-			Tuple<string, object>? LanguageString = DataItems.Find((x) => { return x.Item1 == CodeLanguageString; });
-			SourceCodeDataType.Language langType = SourceCodeDataType.Language.Python;
-			if (Enum.TryParse<SourceCodeDataType.Language>((string)LanguageString.Item2, out SourceCodeDataType.Language result))
-				langType = result;
-
-			if (CodeString != null && LanguageString != null)
-				UpdateSourceCode(new SourceCodeDataType() { 
-					CodeText = (string)CodeString.Item2, CodeLanguage = langType });
+            string? FoundCode = DataItems.FindStringItem(CodeTextString);
+			if (FoundCode != null)
+				UpdateSourceCode(new SourceCodeDataType() { CodeText = FoundCode, CodeLanguage = SourceCodeDataType.Language.Python});
 		}
 
 	}

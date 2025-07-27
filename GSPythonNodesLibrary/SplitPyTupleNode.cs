@@ -206,25 +206,30 @@ namespace Gradientspace.NodeGraph.PythonNodes
 
 
 		private const string TupleTypeString = "TupleType";
-		public override void CollectCustomDataItems(out List<Tuple<string, object>>? DataItems)
+		public override void CollectCustomDataItems(out NodeCustomData? DataItems)
 		{
-			DataItems = new List<Tuple<string, object>>();
-			DataItems.Add(new(TupleTypeString, InputTupleType));        // json-serialize the PythonType, should use PythonTypeJsonConverter
+            DataItems = new NodeCustomData()
+                .AddItem(TupleTypeString, InputTupleType); // json-serialize the PythonType, should use PythonTypeJsonConverter
 		}
-		public override void RestoreCustomDataItems(List<Tuple<string, object>> DataItems)
+		public override void RestoreCustomDataItems(NodeCustomData DataItems)
 		{
-			Tuple<string, object>? ElementTypeTuple = DataItems.Find((x) => { return x.Item1 == TupleTypeString; });
-			if (ElementTypeTuple == null)
-				throw new Exception("SplitTupleNode: TupleType custom data is missing");
+            object? ElementTypeTuple = DataItems.FindItem(TupleTypeString);
+            if (ElementTypeTuple == null)
+                throw new Exception("SplitTupleNode: TupleType custom data is missing");
 
-			JsonElement theThing = (JsonElement)ElementTypeTuple.Item2;
-			PythonType pyType = theThing.Deserialize<PythonType>();         // should use should use PythonTypeJsonConverter
-			setTupleType(pyType);
-		}
+            if (ElementTypeTuple is JsonElement) {      // save/load case
+                JsonElement theThing = (JsonElement)ElementTypeTuple;
+                PythonType pyType = theThing.Deserialize<PythonType>();         // should use should use PythonTypeJsonConverter
+                setTupleType(pyType);
+            } else if (ElementTypeTuple is PythonType) {    // undo/redo case
+                setTupleType((PythonType)ElementTypeTuple);
+            } else
+                throw new Exception("SplitTupleNode: TupleType custom data is invalid");
+        }
 
 
 
 
-	}
+    }
 
 }

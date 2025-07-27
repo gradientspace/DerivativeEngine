@@ -126,20 +126,15 @@ namespace Gradientspace.NodeGraph
         // save/restore the array type
 
 		public const string ArrayTypeKey = "ArrayType";
-		public override void CollectCustomDataItems(out List<Tuple<string, object>>? DataItems)
+		public override void CollectCustomDataItems(out NodeCustomData? DataItems)
 		{
-			DataItems = new List<Tuple<string, object>>();
-			DataItems.Add(new(ArrayTypeKey, TypeUtils.MakePartialQualifiedTypeName(ArrayType)));
+            DataItems = new NodeCustomData().
+                AddTypeItem(ArrayTypeKey, ArrayType);
 		}
-		public override void RestoreCustomDataItems(List<Tuple<string, object>> DataItems)
+		public override void RestoreCustomDataItems(NodeCustomData DataItems)
 		{
-			Tuple<string, object>? ArrayTypeAsString = DataItems.Find((x) => { return x.Item1 == ArrayTypeKey; });
-			if (ArrayTypeAsString == null)
-				throw new Exception("ArrayElementNodeBase: ArrayType custom data is missing");
-			string TypeName = ArrayTypeAsString.Item2.ToString()!;
-
-			Type? arrayType = Type.GetType(TypeName);
-			if (arrayType != null)
+			Type? arrayType = DataItems.FindTypeItemChecked(ArrayTypeKey, out string TypeName, "ArrayElementNodeBase: ArrayType custom data is missing");
+            if (arrayType != null)
 				setArrayType(arrayType);
 			else
 				throw new Exception("ArrayElementNodeBase: ArrayType " + TypeName + " Could not be found");
@@ -393,18 +388,15 @@ namespace Gradientspace.NodeGraph
 
 
 		public const string NumInputsKey = "NumInputs";
-		public override void CollectCustomDataItems(out List<Tuple<string, object>>? DataItems)
+		public override void CollectCustomDataItems(out NodeCustomData? DataItems)
 		{
-			DataItems = new List<Tuple<string, object>>();
-			DataItems.Add(new(NumInputsKey, NumArrayInputs));
+            DataItems = new NodeCustomData()
+                .AddIntItem(NumInputsKey, NumArrayInputs);
 		}
-		public override void RestoreCustomDataItems(List<Tuple<string, object>> DataItems)
+		public override void RestoreCustomDataItems(NodeCustomData DataItems)
 		{
-			Tuple<string, object>? NumInputsFound = DataItems.Find((x) => { return x.Item1 == NumInputsKey; });
-			if (NumInputsFound != null) {
-                NumArrayInputs = ((JsonElement)NumInputsFound.Item2).GetInt32();
-                updateInputsAndOutputs();
-			}
+            NumArrayInputs = DataItems.FindIntItemOrDefault(NumInputsKey, 0);
+            updateInputsAndOutputs();
 		}
 
 	}

@@ -139,19 +139,15 @@ namespace Gradientspace.NodeGraph.PythonNodes
 
 
 		public const string NumInputsKey = "NumInputs";
-		public override void CollectCustomDataItems(out List<Tuple<string, object>>? DataItems)
+		public override void CollectCustomDataItems(out NodeCustomData? DataItems)
 		{
-			DataItems = new List<Tuple<string, object>>();
-			DataItems.Add(new(NumInputsKey, NumInputs));
+            DataItems = new NodeCustomData()
+                .AddIntItem(NumInputsKey, NumInputs);
 		}
-		public override void RestoreCustomDataItems(List<Tuple<string, object>> DataItems)
+		public override void RestoreCustomDataItems(NodeCustomData DataItems)
 		{
-			Tuple<string, object>? NumInputsFound = DataItems.Find((x) => { return x.Item1 == NumInputsKey; });
-			if (NumInputsFound != null)
-			{
-				NumInputs = ((JsonElement)NumInputsFound.Item2).GetInt32();
-				updateInputsAndOutputs();
-			}
+            NumInputs = DataItems.FindIntItemOrDefault(NumInputsKey, 0);
+            updateInputsAndOutputs();
 		}
 
 	}

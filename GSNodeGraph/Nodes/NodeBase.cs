@@ -240,8 +240,8 @@ namespace Gradientspace.NodeGraph
         //
         // serialization-related functions
         //
-        public virtual void CollectCustomDataItems(out List<Tuple<string, object>>? DataItems) { DataItems = null; }
-        public virtual void RestoreCustomDataItems(List<Tuple<string, object>> DataItems) { }
+        public virtual void CollectCustomDataItems(out NodeCustomData? DataItems) { DataItems = null; }
+        public virtual void RestoreCustomDataItems(NodeCustomData DataItems) { }
 
 
 

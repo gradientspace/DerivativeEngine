@@ -267,17 +267,20 @@ namespace Gradientspace.NodeGraph.CodeNodes
 
         public const string CodeTextString = "CodeText";
         public const string CodeLanguageString = "Language";
-        public override void CollectCustomDataItems(out List<Tuple<string, object>>? DataItems) 
+        public override void CollectCustomDataItems(out NodeCustomData? DataItems) 
         {
-            DataItems = new List<Tuple<string, object>>();
-            DataItems.Add( new(CodeTextString, SourceCode.CodeText) );
-            DataItems.Add( new(CodeLanguageString, SourceCode.CodeLanguage.ToString()) );
+            DataItems = new NodeCustomData().
+                AddStringItem(CodeTextString, SourceCode.CodeText).
+                AddEnumItem(CodeLanguageString, SourceCode.CodeLanguage);
         }
-        public override void RestoreCustomDataItems(List<Tuple<string, object>> DataItems)
+        public override void RestoreCustomDataItems(NodeCustomData DataItems)
         {
-            Tuple<string, object>? CodeString = DataItems.Find((x) => { return x.Item1 == CodeTextString; });
-            if (CodeString != null)
-                UpdateSourceCode(new SourceCodeDataType() { CodeText = (string)CodeString.Item2 });
+            var Language = DataItems.FindEnumItemOrDefault(CodeLanguageString, SourceCodeDataType.Language.CSharp);
+            Debug.Assert(Language == SourceCodeDataType.Language.CSharp);
+
+            string? FoundCode = DataItems.FindStringItem(CodeTextString);
+            if (FoundCode != null)
+                UpdateSourceCode(new SourceCodeDataType() { CodeText = FoundCode });
         }
     }
 

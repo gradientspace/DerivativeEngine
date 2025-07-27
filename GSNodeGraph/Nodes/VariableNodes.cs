@@ -258,15 +258,12 @@ namespace Gradientspace.NodeGraph
 
 
 		public const string MinimizedString = "bMinimalDisplay";
-		public override void CollectCustomDataItems(out List<Tuple<string, object>>? DataItems) {
-			DataItems = new List<Tuple<string, object>>() { new(MinimizedString, bMinimalDisplay ? "True" : "False") };
-			//DataItems.Add(new(MinimizedString, bMinimalDisplay));
+		public override void CollectCustomDataItems(out NodeCustomData? DataItems) {
+            DataItems = new NodeCustomData().AddBoolItem(MinimizedString, bMinimalDisplay);
 		}
-		public override void RestoreCustomDataItems(List<Tuple<string, object>> DataItems) {
-			foreach (var value in DataItems) {
-				if (value.Item1 == MinimizedString && value.Item2.ToString() == "True")
-					SetMinimalDisplay(true);
-			}
+		public override void RestoreCustomDataItems(NodeCustomData DataItems) {
+            if (DataItems.FindBoolItemOrDefault(MinimizedString, false) == true)
+                SetMinimalDisplay(true);
 		}
 	}
 

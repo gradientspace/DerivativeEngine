@@ -84,9 +84,9 @@ namespace Gradientspace.NodeGraph
                 if (LayoutProvider != null)
                     sni.Location = LayoutProvider.GetLocationStringForNode(InternalInfo.Identifier);
 
-                node.CollectCustomDataItems(out List<Tuple<string,object>> ? DataItemsList);
-                if ( DataItemsList != null ) {
-                    foreach (var item in DataItemsList)
+                node.CollectCustomDataItems(out NodeCustomData? CustomData);
+                if (CustomData != null ) {
+                    foreach (var item in CustomData.DataItems)
                         sni.CustomData.Add(new GraphNodeCustomData() { Identifier = item.Item1, Value = item.Item2 });
                 }
 
@@ -183,20 +183,20 @@ namespace Gradientspace.NodeGraph
                 // restore custom data because for dynamic nodes this may modify the inputs, 
                 // and they need to be correct for saved constants to be restored
                 if (node.CustomData.Count > 0 ) {
-                    List<Tuple<string, object>> Items = new List<Tuple<string, object>>();
+                    NodeCustomData CustomData = new NodeCustomData();
                     foreach (GraphNodeCustomData data in node.CustomData)
                     {
                         if (data.Value is JsonElement)
                         {
                             JsonElement element = (JsonElement)data.Value;
                             if (element.ValueKind == JsonValueKind.String)
-                                Items.Add(new(data.Identifier, element.ToString()));
+                                CustomData.AddStringItem(data.Identifier, element.ToString());
                             else
-                                Items.Add(new(data.Identifier, element));
+                                CustomData.AddItem(data.Identifier, element);
                         }
 
                     }
-                    FoundNode.RestoreCustomDataItems(Items);
+                    FoundNode.RestoreCustomDataItems(CustomData);
                 }
 
                 foreach (SerializationUtil.InputConstant constant in node.InputConstants) 
