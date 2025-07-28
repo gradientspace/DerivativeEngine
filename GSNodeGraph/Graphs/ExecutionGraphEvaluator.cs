@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Xml.Linq;
 
 namespace Gradientspace.NodeGraph
 {
@@ -33,6 +34,8 @@ namespace Gradientspace.NodeGraph
         public void EvaluateGraph()
         {
             init_cache();
+
+            FunctionReturnsHack.Clear();
 
             EvalVariables = new StandardVariables();
             EvalContext = new EvaluationContext() { Variables = this.EvalVariables };
@@ -153,9 +156,11 @@ namespace Gradientspace.NodeGraph
         //! if it is going to be used (ie if pin is connected)
         void update_cached_pin_data(NodeHandle NodeHandle, NodeBase Node, in NamedDataMap outputDatas)
         {
+            bool bForceStorage = (Node is FunctionDefinitionNode);
+
             // if we do not have a sequence-in, this is a pure node?
             IConnectionInfo sequenceConnection = Graph.FindConnectionTo(NodeHandle.Identifier, "", EConnectionType.Sequence);
-            if (sequenceConnection.IsValid == false)
+            if (sequenceConnection.IsValid == false && bForceStorage == false)
                 return;
 
             List<IConnectionInfo> tmp = new List<IConnectionInfo>();
@@ -252,7 +257,7 @@ namespace Gradientspace.NodeGraph
 		// EvaluateGraphPath() evaluates the graph from a StartNode/Connection until no further sequence
 		// connection is found. IE similar to EvaluateGraph_Internal() but for an internal sequence path, 
 		// like the iteration pin of a for-loop
-		protected void EvaluateGraphPath(NodeHandle StartNode, IConnectionInfo OutgoingConnection)
+		protected void EvaluateGraphPath(NodeHandle StartNode, IConnectionInfo OutgoingConnection, out NodeBase? LastNodeInPath)
         {
             NodeHandle CurrentNodeHandle = StartNode;
             NodeBase CurrentNode = Graph.FindNodeFromHandle(StartNode)!;
@@ -269,17 +274,22 @@ namespace Gradientspace.NodeGraph
 
                 IConnectionInfo NextConnection = IConnectionInfo.Invalid;
                 EvaluateNode(NextNodeHandle, NextNode, out NextConnection);
+                CurrentNodeHandle = NextNodeHandle;
+                CurrentNode = NextNode;
 
                 if (NextConnection == IConnectionInfo.Invalid) {
                     bDone = true;
                 } else {
-                    CurrentNodeHandle = NextNodeHandle;
-                    CurrentNode = NextNode!;
                     NextSequenceConnection = NextConnection;
                 }
             }
-        }
 
+            LastNodeInPath = CurrentNode;
+        }
+        protected void EvaluateGraphPath(NodeHandle StartNode, IConnectionInfo OutgoingConnection)
+        {
+            EvaluateGraphPath(StartNode, OutgoingConnection, out NodeBase? LastNodeInPath);
+        }
 
         // Top-level Node evaluation function. Evaluates a single node and outputs the sequenece connection
         // to the node that should be evaluated next, if there is one
@@ -302,8 +312,15 @@ namespace Gradientspace.NodeGraph
             {
                 EvaluateControlFlowNode(NextNodeHandle, NextNode, out NextConnection);
             }
-            else
+            else if (NextNode is FunctionCallNode callNode) 
             {
+                EvaluateFunctionCallNode(NextNodeHandle, callNode, out NextConnection);
+            }
+            else if (NextNode is FunctionReturnNode retNode) 
+            {
+                EvaluateFunctionReturnNode(NextNodeHandle, retNode, out NextConnection);
+            }
+            else {
                 EvaluateStandardNode(NextNodeHandle, NextNode, out NextConnection);
             }
 
@@ -510,14 +527,146 @@ namespace Gradientspace.NodeGraph
         }
 
 
-		// FetchInputDatas looks at a list of required input-pins at a Node, and gets the incoming data on each pin, and stores
+        // this is used as a sort of stack mechanism, where a Return node pushes it's input NamedDataMap
+        // by FunctionID, and the parent EvaluateFunctionCallNode finds it. Note that currently this
+        // prevents recursion.
+        // (if we actually used a stack here...would recursion work? seems like it....)
+        Dictionary<string, NamedDataMap> FunctionReturnsHack = new Dictionary<string, NamedDataMap>();
+
+
+        protected void EvaluateFunctionCallNode(
+            NodeHandle CallNodeHandle,
+            FunctionCallNode CallNode,
+            out IConnectionInfo NextConnection)
+        {
+            NextConnection = IConnectionInfo.Invalid;
+
+            // figure out which outputs are in use
+            List<string> RequiredOutputs = new List<string>();
+            List<Type> RequiredOutputTypes = new List<Type>();
+            foreach (NodeBase.NodeOutputInfo outputInfo in CallNode.Outputs) {
+                RequiredOutputs.Add(outputInfo.Name);
+                RequiredOutputTypes.Add(outputInfo.Output.GetDataType().DataType);
+            }
+
+            // figure out which inputs are required to compute those outputs
+            List<NodeInputRequirement> RequiredInputs = new List<NodeInputRequirement>();
+            CallNode.CollectOutputRequirements(RequiredOutputs, RequiredInputs);
+
+            // gather up the incoming data on those inputs (which may recursively evaluate non-sequence nodes!)
+            NamedDataMap CallInputDatas = new NamedDataMap(RequiredInputs.Count);
+            FetchInputDatas(CallNode, CallNodeHandle, RequiredInputs, CallInputDatas);
+
+            // populate the required-outputs datamap
+            NamedDataMap CallOutputDatas = new NamedDataMap(RequiredOutputs.Count);
+            for (int i = 0; i < RequiredOutputs.Count; ++i)
+                CallOutputDatas.SetItem(i, RequiredOutputs[i], RequiredOutputTypes[i], null);
+
+            if (EnableDebugging)
+                GlobalGraphOutput.AppendLine("Evaluating Function Call " + CallNode.GetNodeName(), EGraphOutputType.Logging);
+
+            // find the FunctionDefinition node
+            FunctionDefinitionNode? FuncNode = null;
+            foreach (INodeInfo nodeInfo in Graph.EnumerateNodes()) {
+                if (nodeInfo.Node is FunctionDefinitionNode defNode) {
+                    if (defNode.FunctionID == CallNode.FunctionID) {
+                        FuncNode = defNode;
+                        break;
+                    }
+                }
+            }
+            if (FuncNode == null)
+                throw new EvaluationAbortedException($"EvaluateFunctionCallNode - function {CallNode.FunctionName} with ID {CallNode.FunctionID} could not be found") { FailedNode = CallNode };
+            NodeHandle FuncNodeHandle = new NodeHandle(FuncNode.GraphIdentifier);
+
+            // find the sequence connection leaving the FunctionDefinition node
+            List<IConnectionInfo> FuncSequenceConnections = new List<IConnectionInfo>();
+            Graph.FindConnectionsFrom(FuncNode.GraphIdentifier, "", ref FuncSequenceConnections, EConnectionType.Sequence);
+            IConnectionInfo FuncNodeConnection = FuncSequenceConnections[0];
+
+            // The FunctionDefinition node input pins and output pins are the same,
+            // and should have the same names/types as the FunctionCall input pins. 
+            // These are all the same data and so we can use the InputDatas on the FunctionCall
+            // as the output datamap for the FunctionDefinition node
+            //
+            // NOTE: this prevents recursion and also any kind of nested function calls, 
+            // as the second call will overwrite the cached data for the first! 
+            // Need a more reliable way to do this...maybe with scope??
+            update_cached_pin_data(FuncNodeHandle, FuncNode, CallInputDatas);
+
+            // now we can evaluate the function graph
+            EvaluateGraphPath(FuncNodeHandle, FuncNodeConnection, out NodeBase? LastNodeInPath);
+
+            NamedDataMap? returnOutputDatas = null;
+            bool bReturnRequired = (RequiredOutputs.Count > 0);
+            if (LastNodeInPath is FunctionReturnNode returnNode) {
+                if ( FunctionReturnsHack.ContainsKey(FuncNode.FunctionID) == false )
+                    throw new EvaluationAbortedException($"EvaluateFunctionCallNode - cannot find return data for {FuncNode.FunctionName} call") { FailedNode = FuncNode };
+                returnOutputDatas = FunctionReturnsHack[FuncNode.FunctionID];
+                FunctionReturnsHack.Remove(FuncNode.FunctionID);
+            } else if (bReturnRequired)
+                throw new EvaluationAbortedException($"EvaluateFunctionCallNode - {FuncNode.FunctionName} terminated without a Return node") { FailedNode = FuncNode };
+
+            // run the node evaluation and store the outputs in the cache
+            LastNumEvaluatedNodes++;
+            if (returnOutputDatas != null)
+                update_cached_pin_data(CallNodeHandle, CallNode, returnOutputDatas);
+
+            // find the output connection if it exist and return via NextConnection
+            List<IConnectionInfo> OutputConnections = new List<IConnectionInfo>();
+            Graph.FindConnectionsFrom(CallNodeHandle.Identifier, "", ref OutputConnections, EConnectionType.Sequence);
+            if (OutputConnections.Count > 1)
+                throw new EvaluationAbortedException("EvaluateFunctionCallNode: found node with more than one output sequence connection?") { FailedNode = CallNode };
+            if (OutputConnections.Count == 1)
+                NextConnection = OutputConnections[0];
+        }
+
+
+        protected void EvaluateFunctionReturnNode(
+            NodeHandle ReturnNodeHandle,
+            FunctionReturnNode ReturnNode,
+            out IConnectionInfo NextConnection)
+        {
+            NextConnection = IConnectionInfo.Invalid;       // always the case for a return node...
+
+            // figure out which outputs are in use
+            List<string> RequiredOutputs = new List<string>();
+            List<Type> RequiredOutputTypes = new List<Type>();
+            foreach (NodeBase.NodeOutputInfo outputInfo in ReturnNode.Outputs) {
+                RequiredOutputs.Add(outputInfo.Name);
+                RequiredOutputTypes.Add(outputInfo.Output.GetDataType().DataType);
+            }
+
+            // figure out which inputs are required to compute those outputs
+            List<NodeInputRequirement> RequiredInputs = new List<NodeInputRequirement>();
+            ReturnNode.CollectOutputRequirements(RequiredOutputs, RequiredInputs);
+
+            // gather up the incoming data on those inputs (which may recursively evaluate non-sequence nodes!)
+            NamedDataMap InputDatas = new NamedDataMap(RequiredInputs.Count);
+            FetchInputDatas(ReturnNode, ReturnNodeHandle, RequiredInputs, InputDatas);
+
+            if (EnableDebugging)
+                GlobalGraphOutput.AppendLine("Evaluating Function Return " + ReturnNode.GetNodeName(), EGraphOutputType.Logging);
+
+            // The inputs to Return are the outputs to Call. We can't directly access the Call
+            // here, but any evaluation of this function is running inside an EvaluateFunctionCallNode.
+            // So we store the NamedDataMap by UUID and let the call pick it up. 
+            // (this hack prevents recursion...)
+            if (FunctionReturnsHack.ContainsKey(ReturnNode.FunctionID))
+                throw new Exception("EvaluateFunctionReturnNode - recursion not supported");
+            FunctionReturnsHack.Add(ReturnNode.FunctionID, InputDatas);
+        }
+
+
+
+        // FetchInputDatas looks at a list of required input-pins at a Node, and gets the incoming data on each pin, and stores
         // that (pin,datum) info in a NamedDataMap. There are various cases/complications because:
         //   1) a pin might not be connected to anything, but have constant data defined on the input  (eg like a float or string input)
         //   2) the output pin on the other side of the input pin connection may have it's data cached already
         //   3) if the data isn't cached already, we need to recursively compute it (only possible for nodes that don't require a sequence connection, like math/etc)
         //   4) we might need to apply automatic type conversions
         // 
-		protected void FetchInputDatas(NodeBase Node, NodeHandle nodeHandle, List<NodeInputRequirement> RequiredInputs, /*inout*/ NamedDataMap InputDatas)
+        protected void FetchInputDatas(NodeBase Node, NodeHandle nodeHandle, List<NodeInputRequirement> RequiredInputs, /*inout*/ NamedDataMap InputDatas)
         {
             int NumInputs = RequiredInputs.Count;
             for (int k = 0; k < NumInputs; ++k)

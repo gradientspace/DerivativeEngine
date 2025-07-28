@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using System.Diagnostics;
+using static Gradientspace.NodeGraph.FunctionDefinitionNode;
 
 namespace Gradientspace.NodeGraph
 {
@@ -106,8 +107,25 @@ namespace Gradientspace.NodeGraph
             FunctionID = DataItems.FindStringItemOrDefault(FunctionIDKey, "(invalid)");
             functionName = DataItems.FindStringItemOrDefault(FunctionNameKey, "NoNameFunc");
 
+            List<FunctionArg> restoredArgs = RestoreArgs(DataItems, FunctionArgsKey);
+            UpdateArguments(restoredArgs);
+            List<FunctionArg> restoredRets = RestoreArgs(DataItems, FunctionReturnsKey);
+            UpdateReturnArguments(restoredRets);
+        }
+
+
+
+        // does function node ever actually get evaluated??
+        public override void Evaluate(ref readonly NamedDataMap DataIn, NamedDataMap RequestedDataOut)
+        {
+            throw new NotImplementedException();
+        }
+
+
+        public static List<FunctionArg> RestoreArgs(NodeCustomData DataItems, string Key)
+        {
             List<FunctionArg> restoredArgs = new List<FunctionArg>();
-            object? FoundArgs = DataItems.FindItem(FunctionArgsKey);
+            object? FoundArgs = DataItems.FindItem(Key);
             if (FoundArgs is JsonElement jsonFoundArgs) {
                 Debug.Assert(jsonFoundArgs.ValueKind == JsonValueKind.Array);
                 foreach (JsonElement elem in jsonFoundArgs.EnumerateArray()) {
@@ -117,31 +135,7 @@ namespace Gradientspace.NodeGraph
 
             } else
                 restoredArgs = (List<FunctionArg>)FoundArgs!;
-            UpdateArguments(restoredArgs);
-
-            List<FunctionArg> restoredRets = new List<FunctionArg>();
-            object? FoundRets = DataItems.FindItem(FunctionReturnsKey);
-            if (FoundRets is JsonElement jsonFoundRets) {
-                Debug.Assert(jsonFoundRets.ValueKind == JsonValueKind.Array);
-                foreach (JsonElement elem in jsonFoundRets.EnumerateArray()) {
-                    FunctionArg arg = elem.Deserialize<FunctionArg>();
-                    restoredRets.Add(arg);
-                }
-
-            } else
-                restoredRets = (List<FunctionArg>)FoundArgs!;
-            UpdateReturnArguments(restoredRets);
-        }
-
-
-        // todo save/restore FunctionID / functionName / functionArgs / returnArgs / from custom data
-
-
-
-        // does function node ever actually get evaluated??
-        public override void Evaluate(ref readonly NamedDataMap DataIn, NamedDataMap RequestedDataOut)
-        {
-            throw new NotImplementedException();
+            return restoredArgs;
         }
 
     }
@@ -189,6 +183,23 @@ namespace Gradientspace.NodeGraph
         }
 
 
+        public const string FunctionIDKey = "FunctionID";
+        public const string FunctionReturnsKey = "Returns";
+        public override void CollectCustomDataItems(out NodeCustomData? DataItems)
+        {
+            DataItems = new NodeCustomData().
+                AddStringItem(FunctionIDKey, FunctionID).
+                AddItem(FunctionReturnsKey, returnArgs);
+        }
+        public override void RestoreCustomDataItems(NodeCustomData DataItems)
+        {
+            FunctionID = DataItems.FindStringItemOrDefault(FunctionIDKey, "(invalid)");
+
+            List<FunctionArg> restoredRets = FunctionDefinitionNode.RestoreArgs(DataItems, FunctionReturnsKey);
+            UpdateArguments(restoredRets);
+        }
+
+
 
         // does return node ever actually get evaluated??
         public override void Evaluate(ref readonly NamedDataMap DataIn, NamedDataMap RequestedDataOut)
@@ -206,7 +217,7 @@ namespace Gradientspace.NodeGraph
     public class FunctionCallNode : NodeBase
     {
         public override string GetDefaultNodeName() {
-            return "Return";
+            return "FunctionCall";
         }
         public override string GetCustomNodeName()
         {
@@ -219,6 +230,7 @@ namespace Gradientspace.NodeGraph
             UpdateArguments(functionNode.Arguments, functionNode.ReturnArguments);
         }
 
+        public string FunctionName { get { return functionName; } }
         public string FunctionID { get; private set; } = "";
 
         protected string functionName = "NewFunction";
@@ -259,8 +271,34 @@ namespace Gradientspace.NodeGraph
 
 
 
-        // does return node ever actually get evaluated??
-        public override void Evaluate(ref readonly NamedDataMap DataIn, NamedDataMap RequestedDataOut)
+        public const string FunctionIDKey = "FunctionID";
+        public const string FunctionNameKey = "FunctionName";
+        public const string FunctionArgsKey = "Arguments";
+        public const string FunctionReturnsKey = "Returns";
+        public override void CollectCustomDataItems(out NodeCustomData? DataItems)
+        {
+            DataItems = new NodeCustomData().
+                AddStringItem(FunctionIDKey, FunctionID).
+                AddStringItem(FunctionNameKey, functionName).
+                AddItem(FunctionArgsKey, inputArgs).
+                AddItem(FunctionReturnsKey, returnArgs);
+        }
+        public override void RestoreCustomDataItems(NodeCustomData DataItems)
+        {
+            FunctionID = DataItems.FindStringItemOrDefault(FunctionIDKey, "(invalid)");
+            functionName = DataItems.FindStringItemOrDefault(FunctionNameKey, "NoNameFunc");
+
+            List<FunctionArg> restoredArgs = FunctionDefinitionNode.RestoreArgs(DataItems, FunctionArgsKey);
+            List<FunctionArg> restoredRets = FunctionDefinitionNode.RestoreArgs(DataItems, FunctionReturnsKey);
+            UpdateArguments(restoredArgs, restoredRets);
+        }
+
+
+
+        // does call node ever actually get evaluated??
+        public override void Evaluate(EvaluationContext EvalContext,
+            ref readonly NamedDataMap DataIn,
+            NamedDataMap RequestedDataOut)
         {
             throw new NotImplementedException();
         }
