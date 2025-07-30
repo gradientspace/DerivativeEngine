@@ -115,6 +115,15 @@ namespace Gradientspace.NodeGraph
 	    - for continue-iteration, EvaluateGraphPath() is called to evaluate the entire iteration sequence path
 	    - for done-iteration, returns next-connection as usual
 
+    - EvaluateFunctionCallNode() / EvaluateFunctionReturnNode() :
+        - implementation for handling calls to functions defined in the graph
+        - EvaluateFunctionCallNode() is called for FunctionCallNodes, gets it's inputs and then
+            passes those inputs to the associated FunctionDefinitionNode, via EvaluateGraphPath()
+        - EvaluateFunctionReturnNode() is called for FunctionReturnNodes, which are always in the context
+            of the EvaluateGraphPath() that EvaluateFunctionCallNode() will have started at an associated FunctionDefNode
+            Currently FunctionReturnsHack is used to pass return values back to the FunctionCallNode
+        - EvaluateFunctionCallNode() transfers return values from FunctionReturnsHack to the FunctionCallNode output pins
+
     - EvaluateGraphPath(start_node, start_connection) :
 	    - very similar to EvaluateGraph_Internal(), but starts at a specific node+connection and follows the path that defines
 
