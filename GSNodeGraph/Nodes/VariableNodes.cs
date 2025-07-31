@@ -31,7 +31,7 @@ namespace Gradientspace.NodeGraph
 		protected void AddNameInput()
 		{
 			// todo handle call multiple times?
-			NameInput = new StandardStringNodeInput("(name)");
+			NameInput = new VariableNameNodeInput("(name)");
 			// variable name needs to be node-constant to allow for static analysis...
 			NameInput.Flags |= ENodeInputFlags.IsNodeConstant;
 			AddInput(NameInputName, NameInput);
@@ -197,6 +197,13 @@ namespace Gradientspace.NodeGraph
 				if (NameInput != null) NameInput.Flags &= ~ENodeInputFlags.Hidden;
 			}
 		}
+
+        public virtual void UpdateNameAndNotify(string NewName)
+        {
+            NameInput?.SetConstantValue(NewName);
+            PublishNodeModifiedNotification();
+        }
+
 
 		public virtual string GetVariableName()
 		{

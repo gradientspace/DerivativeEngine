@@ -131,7 +131,10 @@ namespace Gradientspace.NodeGraph
 		}
 	}
 
-
+    public class VariableNameNodeInput : StandardStringNodeInput
+    {
+        public VariableNameNodeInput(string initialValue = "") : base(initialValue) { }
+    }
 
 
 }
