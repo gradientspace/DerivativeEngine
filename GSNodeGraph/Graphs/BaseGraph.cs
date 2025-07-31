@@ -474,8 +474,12 @@ namespace Gradientspace.NodeGraph
 
         public virtual bool SetNodeConstantValue(int NodeIdentifier, string InputName, object NewValue)
         {
-            foreach (NodeInfo info in Nodes) {
-                if (info.Identifier == NodeIdentifier) {
+            const bool bPublishEvent = true;
+            foreach (NodeInfo info in Nodes) 
+            {
+                if (info.Identifier == NodeIdentifier) 
+                {
+                    bool bSetValue = false;
                     INodeInput? FoundInput = info.Node.FindInput(InputName);
                     if (FoundInput != null)
                     {
@@ -484,18 +488,25 @@ namespace Gradientspace.NodeGraph
                         Type NewValueType = NewValue.GetType();
                         if ( NewValueType == inputType ) {
                             FoundInput.SetConstantValue(NewValue);
-                            return true;
+                            info.Node.PublishNodeModifiedNotification();
+                            bSetValue = true;
                         }
                         if ( NewValueType.IsAssignableTo(inputType) ) {
                             FoundInput.SetConstantValue(NewValue);
-                            return true;
+                            bSetValue = true;
                         }
 
                         object? CastType = Convert.ChangeType(NewValue, inputType);
                         if (CastType != null) {
                             FoundInput.SetConstantValue(CastType);
-                            return true;
+                            bSetValue = true;
                         }
+                    }
+
+                    if (bSetValue && bPublishEvent) {
+                        // note: this is the nuclear option, that will force-rebuild the entire node,
+                        // but we do not have a more precise way to do it yet...
+                        info.Node.PublishNodeModifiedNotification();
                     }
                 }
             }
