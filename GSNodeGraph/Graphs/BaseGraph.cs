@@ -380,7 +380,15 @@ namespace Gradientspace.NodeGraph
             }
         }
 
-		public virtual INodeInfo FindNodeFromIdentifier(int NodeIdentifier)
+        public virtual IEnumerable<T> EnumerateNodesOfType<T>() where T : NodeBase
+        {
+            foreach (NodeInfo info in Nodes) {
+                if (info.Node is T typedNode)
+                    yield return typedNode;
+            }
+        }
+
+        public virtual INodeInfo FindNodeFromIdentifier(int NodeIdentifier)
         {
             INode? Found = FindNodeFromHandle(new NodeHandle(NodeIdentifier));
             if ( Found != null )
@@ -388,7 +396,15 @@ namespace Gradientspace.NodeGraph
             return new INodeInfo();
 		}
 
-		public virtual IEnumerable<IConnectionInfo> EnumerateConnections(EConnectionType connectionType)
+        public virtual T? FindTypedNodeFromIdentifier<T>(int NodeIdentifier) where T : NodeBase
+        {
+            INode? Found = FindNodeFromHandle(new NodeHandle(NodeIdentifier));
+            if ( Found == null ) return null;
+            T? TypedNode = Found as T;
+            return TypedNode;
+        }
+
+        public virtual IEnumerable<IConnectionInfo> EnumerateConnections(EConnectionType connectionType)
         {
             List<Connection> UseList = (connectionType == EConnectionType.Data) ? Connections : SequenceConnections;
             foreach (Connection connection in UseList)

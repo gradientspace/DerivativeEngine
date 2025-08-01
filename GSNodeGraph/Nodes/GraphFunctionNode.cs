@@ -239,6 +239,11 @@ namespace Gradientspace.NodeGraph
         protected List<FunctionDefinitionNode.FunctionArg> inputArgs = new List<FunctionDefinitionNode.FunctionArg>();
         protected List<FunctionDefinitionNode.FunctionArg> returnArgs = new List<FunctionDefinitionNode.FunctionArg>();
 
+        public void UpdateFunctionName(string NewFunctionName)
+        {
+            functionName = NewFunctionName;
+            PublishNodeModifiedNotification();
+        }
 
         public void UpdateArguments(IEnumerable<FunctionDefinitionNode.FunctionArg> newInputArgs, 
             IEnumerable<FunctionDefinitionNode.FunctionArg> newReturnArgs)
@@ -255,7 +260,7 @@ namespace Gradientspace.NodeGraph
                 if (!bInputOK)
                     GlobalGraphOutput.AppendError($"FunctionCallNode.UpdateArguments: input pin could not be created for argument {arg.ArgName} with Type {arg.ArgType}");
             }
-            foreach (FunctionDefinitionNode.FunctionArg arg in newReturns) {
+            foreach (FunctionDefinitionNode.FunctionArg arg in newReturnArgs) {
                 newReturns.Add(arg);
                 INodeOutput argOutput = new StandardNodeOutputBase(arg.ArgType);
                 bool bOutputOK = AddOutput(arg.ArgName, argOutput);
