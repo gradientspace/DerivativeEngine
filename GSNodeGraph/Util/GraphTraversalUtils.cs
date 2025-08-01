@@ -59,27 +59,10 @@ namespace Gradientspace.NodeGraph
         /**
 		 * Traverse all sequence paths in the entire graph. This traversal will split at
 		 * any node that has multiple sequence outputs. Will touch all nodes with a sequence
-		 * path connected to the startNode (but not disconnected paths or non-sequence/pure nodes!)
-		 **/
-        public static void TraverseAllSequencePaths(
-            BaseGraph Graph,
-            NodeHandle startNodeHandle,
-            Action<NodeBase> NodeFunction,
-            Action<NodeBase, IConnectionInfo>? PushScopeFunction = null,
-            Action<NodeBase, IConnectionInfo>? PopScopeFunction = null)
-        {
-            NodeBase? StartNode = Graph.FindNodeFromHandle(startNodeHandle);
-            if (StartNode == null) return;
-            List<IConnectionInfo> InitialSeqConnections = FindAllOutgoingSequenceConnections(Graph, startNodeHandle, StartNode);
-            foreach (IConnectionInfo outgoingSeqConn in InitialSeqConnections) 
-            {
-                PushScopeFunction?.Invoke(StartNode, outgoingSeqConn);
-                traverse_paths(Graph, startNodeHandle, outgoingSeqConn, NodeFunction, PushScopeFunction, PopScopeFunction);
-                PopScopeFunction?.Invoke(StartNode, outgoingSeqConn);
-            }
-        }
-
-
+		 * path connected to SequenceStartNode or FunctionDefinitionNode node types
+         *
+         * (but currently not disconnected paths or non-sequence/pure nodes!)
+		 */
         public enum ScopeType
         {
             GraphStart = 0,
@@ -112,49 +95,6 @@ namespace Gradientspace.NodeGraph
                 ScopeFunction?.Invoke(startNode, SeqConnections[0], ScopeType.GraphStart, false);
             }
         }
-
-
-
-
-        private static void traverse_paths(BaseGraph Graph, NodeHandle nodeHandle, IConnectionInfo outgoingConnection,
-            Action<NodeBase> NodeFunction, Action<NodeBase, IConnectionInfo>? PushScopeFunction, 
-            Action<NodeBase, IConnectionInfo>? PopScopeFunction)
-        {
-            List<IConnectionInfo> SeqConnections = new List<IConnectionInfo>();
-            NodeHandle CurrentNodeHandle = nodeHandle;
-            IConnectionInfo NextSequenceConnection = outgoingConnection;
-
-            bool bDone = false;
-            while (!bDone) {
-                NodeHandle NextNodeHandle = new(NextSequenceConnection.ToNodeIdentifier);
-                NodeBase? NextNode = Graph.FindNodeFromHandle(NextNodeHandle);
-
-                if (NextNode == null) {
-                    bDone = true;
-                    break;
-                }
-
-                NodeFunction(NextNode);
-
-                SeqConnections.Clear();
-                FindAllOutgoingSequenceConnections(Graph, NextNodeHandle, ref SeqConnections, NextNode);
-                if (SeqConnections.Count == 1) 
-                {
-                    CurrentNodeHandle = NextNodeHandle;
-                    NextSequenceConnection = SeqConnections[0];
-                } else {
-                    foreach (IConnectionInfo outgoingSeqConn in SeqConnections) 
-                    {
-                        PushScopeFunction?.Invoke(NextNode, outgoingSeqConn);
-                        traverse_paths(Graph, NextNodeHandle, outgoingSeqConn, NodeFunction, PushScopeFunction, PopScopeFunction);
-                        PopScopeFunction?.Invoke(NextNode, outgoingSeqConn);
-                    }
-                    bDone = true;
-                }
-            }
-        }
-
-
 
 
         private static void traverse_paths(BaseGraph Graph, NodeHandle nodeHandle, IConnectionInfo outgoingConnection,
