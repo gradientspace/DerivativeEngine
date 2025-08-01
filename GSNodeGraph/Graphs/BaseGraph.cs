@@ -502,20 +502,24 @@ namespace Gradientspace.NodeGraph
                         GraphDataType InputDataType = FoundInput.GetDataType();
                         Type inputType = InputDataType.DataType;
                         Type NewValueType = NewValue.GetType();
-                        if ( NewValueType == inputType ) {
+                        if ( NewValueType == inputType ) 
+                        {
                             FoundInput.SetConstantValue(NewValue);
                             info.Node.PublishNodeModifiedNotification();
                             bSetValue = true;
                         }
-                        if ( NewValueType.IsAssignableTo(inputType) ) {
+                        else if ( NewValueType.IsAssignableTo(inputType) ) 
+                        {
                             FoundInput.SetConstantValue(NewValue);
                             bSetValue = true;
                         }
-
-                        object? CastType = Convert.ChangeType(NewValue, inputType);
-                        if (CastType != null) {
-                            FoundInput.SetConstantValue(CastType);
-                            bSetValue = true;
+                        else if (NewValue is IConvertible) 
+                        { 
+                            object? CastType = Convert.ChangeType(NewValue, inputType);
+                            if (CastType != null) {
+                                FoundInput.SetConstantValue(CastType);
+                                bSetValue = true;
+                            }
                         }
                     }
 
