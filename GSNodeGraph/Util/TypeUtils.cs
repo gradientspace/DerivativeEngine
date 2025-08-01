@@ -80,12 +80,21 @@ namespace Gradientspace.NodeGraph
 
         public static string TypeToString(Type type)
         {
+            // handle 1D arrays...  (todo: handle N-d arrays...)
+            if (type.IsArray && type.GetArrayRank() == 1 && type.GetElementType() != null) {
+                Type elemType = type.GetElementType()!;
+                return TypeToString(elemType) + "[]";
+            }
+
+            // could make a table of first-characters for this?
             if (type == typeof(float))
                 return "float";
             else if (type == typeof(double))
                 return "double";
             else if (type == typeof(byte))
                 return "byte";
+            else if (type == typeof(sbyte))
+                return "sbyte";
             else if (type == typeof(int))
                 return "int";
             else if (type == typeof(uint))
@@ -94,6 +103,20 @@ namespace Gradientspace.NodeGraph
                 return "long";
             else if (type == typeof(ulong))
                 return "ulong";
+            else if (type == typeof(short))
+                return "short";
+            else if (type == typeof(ushort))
+                return "ushort";
+            else if (type == typeof(decimal))
+                return "decimal";
+            else if (type == typeof(string))
+                return "string";
+            else if (type == typeof(bool))
+                return "bool";
+            else if (type == typeof(char))
+                return "char";
+            else if (type == typeof(object))
+                return "object";
             else if (type.GetGenericArguments().Length > 0)
                 return MakeNiceGenericName(type);
             else
@@ -104,7 +127,7 @@ namespace Gradientspace.NodeGraph
         public static string MakeNiceGenericName(Type type)
         {
             if (type.GetGenericArguments().Length == 0)
-                return type.Name;
+                return TypeToString(type);
             var genericArguments = type.GetGenericArguments();
             var typeDefinition = type.Name;
             var unmangledName = typeDefinition.Substring(0, typeDefinition.IndexOf("`"));
@@ -252,7 +275,7 @@ namespace Gradientspace.NodeGraph
         {
             string AssemblyName = assemblyName ?? string.Empty;
 
-            bool bIsQualifiedName = typeName.Contains(',');
+            bool bIsQualifiedName = typeName.Contains(',') || typeName.StartsWith("System.");
             if (bIsQualifiedName)
             {
                 Type? QualifiedType = Type.GetType(typeName);
