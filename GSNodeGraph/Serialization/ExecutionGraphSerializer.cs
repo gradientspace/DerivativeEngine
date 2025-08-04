@@ -133,8 +133,31 @@ namespace Gradientspace.NodeGraph
 		}
 
 
-        public static bool Restore(Stream utf8Stream, ExecutionGraph appendToGraph, INodeGraphLayoutProvider? LayoutProvider = null)
+        public struct RestoreGraphOptions
         {
+            public INodeGraphLayoutProvider? LayoutProvider = null;
+
+            public Func<NodeType, int, string, bool>? IncludeNodeFunc = null;
+
+            public Dictionary<int, int>? NodeIDMapIn = null;
+
+            public Dictionary<int, int>? NodeIDMapOut = null;
+
+            public RestoreGraphOptions() { }
+        }
+
+        public static bool Restore(Stream utf8Stream, ExecutionGraph appendToGraph)
+        {
+            return Restore(utf8Stream, appendToGraph, new RestoreGraphOptions());
+        }
+        public static bool Restore(
+            Stream utf8Stream, 
+            ExecutionGraph appendToGraph, 
+            RestoreGraphOptions options )
+        {
+            Dictionary<int, int> nodeIdentifierMap = 
+                (options.NodeIDMapOut != null) ? options.NodeIDMapOut : new Dictionary<int, int>();
+
             SerializedGraph? Serialized = JsonSerializer.Deserialize<SerializedGraph>(utf8Stream);
             if (Serialized == null)
                 return false;
@@ -142,43 +165,49 @@ namespace Gradientspace.NodeGraph
             bool bNodeErrors = false;
             bool bConnectionErrors = false;
 
-            Dictionary<int, int> NodeIdentifierMap = new Dictionary<int, int>();
             int MaxIdentifier = -1;
             foreach (GraphNode node in Serialized.Nodes)
             {
                 NodeType? FoundNodeType = DefaultNodeLibrary.Instance.FindNodeType(node.NodeClassType, node.NodeClassVariant);
                 if (FoundNodeType == null)
                 {
-                    NodeIdentifierMap.Add(node.Identifier, -1);
+                    nodeIdentifierMap.Add(node.Identifier, -1);
                     bNodeErrors = true;
                     continue;
                 }
+
+                if (options.IncludeNodeFunc != null && options.IncludeNodeFunc(FoundNodeType, node.Identifier, node.NodeName) == false)
+                    continue;
 
                 // ExecutionGraph comes with a start node already....will reuse for now...maybe should replace it?
                 // (TODO HACK do something about this...)
                 if (FoundNodeType.ClassType == typeof(SequenceStartNode) )
                 {
-                    NodeIdentifierMap.Add(node.Identifier, appendToGraph.StartNodeHandle.Identifier);
-                    if (LayoutProvider != null)
-                        LayoutProvider.SetNodeLocationFromString(appendToGraph.StartNodeHandle.Identifier, node.Location.ToString());
+                    nodeIdentifierMap.Add(node.Identifier, appendToGraph.StartNodeHandle.Identifier);
+                    if (options.LayoutProvider != null)
+                        options.LayoutProvider.SetNodeLocationFromString(appendToGraph.StartNodeHandle.Identifier, node.Location.ToString());
                     continue;
                 }
 
-                NodeHandle newNodeHandle = appendToGraph.AddNodeOfType(FoundNodeType);
+                int UseSpecifiedNodeID = -1;
+                if (options.NodeIDMapIn != null && options.NodeIDMapIn.TryGetValue(node.Identifier, out int SpecifiedID))
+                    UseSpecifiedNodeID = SpecifiedID;
+
+                NodeHandle newNodeHandle = appendToGraph.AddNodeOfType(FoundNodeType, UseSpecifiedNodeID);
                 if (newNodeHandle == NodeHandle.Invalid)
                 {
-                    NodeIdentifierMap.Add(node.Identifier, -1);
+                    nodeIdentifierMap.Add(node.Identifier, -1);
                     bNodeErrors = true;
                     continue;
                 }
                 NodeBase? FoundNode = appendToGraph.FindNodeFromHandle(newNodeHandle);
                 Debug.Assert(FoundNode != null);
 
-                NodeIdentifierMap.Add(node.Identifier, newNodeHandle.Identifier);
+                nodeIdentifierMap.Add(node.Identifier, newNodeHandle.Identifier);
                 MaxIdentifier = Math.Max(MaxIdentifier, newNodeHandle.Identifier);
 
-				if (LayoutProvider != null)
-                    LayoutProvider.SetNodeLocationFromString(newNodeHandle.Identifier, node.Location.ToString());
+				if (options.LayoutProvider != null)
+                    options.LayoutProvider.SetNodeLocationFromString(newNodeHandle.Identifier, node.Location.ToString());
 
                 // restore custom data because for dynamic nodes this may modify the inputs, 
                 // and they need to be correct for saved constants to be restored
@@ -223,8 +252,8 @@ namespace Gradientspace.NodeGraph
                 SortedConnections[nodeInfo.Identifier] = new NodeConnections() { NodeIdentifier = nodeInfo.Identifier, Node = nodeInfo.Node };
             foreach (Connection c in Serialized.DataConnections)
             {
-                if (NodeIdentifierMap.TryGetValue(c.FromNode, out int FromNodeIdentifier) == false
-                     || NodeIdentifierMap.TryGetValue(c.ToNode, out int ToNodeIdentifier) == false)
+                if (nodeIdentifierMap.TryGetValue(c.FromNode, out int FromNodeIdentifier) == false
+                     || nodeIdentifierMap.TryGetValue(c.ToNode, out int ToNodeIdentifier) == false)
                 {
                     bConnectionErrors = true;
                     continue;
@@ -284,8 +313,8 @@ namespace Gradientspace.NodeGraph
             // did for data connections)
             foreach (Connection c in Serialized.SequenceConnections)
             {
-                if (NodeIdentifierMap.TryGetValue(c.FromNode, out int FromNodeIdentifier) == false
-                     || NodeIdentifierMap.TryGetValue(c.ToNode, out int ToNodeIdentifier) == false)
+                if (nodeIdentifierMap.TryGetValue(c.FromNode, out int FromNodeIdentifier) == false
+                     || nodeIdentifierMap.TryGetValue(c.ToNode, out int ToNodeIdentifier) == false)
                     continue;
 
                 bool bOK = appendToGraph.AddSequenceConnection(
