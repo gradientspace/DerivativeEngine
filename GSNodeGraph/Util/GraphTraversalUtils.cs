@@ -79,6 +79,7 @@ namespace Gradientspace.NodeGraph
             foreach (FunctionDefinitionNode funcDefNode in Graph.EnumerateNodesOfType<FunctionDefinitionNode>()) 
             {
                 List<IConnectionInfo> FuncSeqConnections = FindAllOutgoingSequenceConnections(Graph, funcDefNode);
+                if (FuncSeqConnections.Count == 0) continue;
                 Debug.Assert(FuncSeqConnections.Count == 1);
                 ScopeFunction?.Invoke(funcDefNode, FuncSeqConnections[0], ScopeType.GraphFunction, true);
                 traverse_paths(Graph, new(funcDefNode.GraphIdentifier), FuncSeqConnections[0], NodeFunction, ScopeFunction);
@@ -89,6 +90,7 @@ namespace Gradientspace.NodeGraph
             foreach (SequenceStartNode startNode in Graph.EnumerateNodesOfType<SequenceStartNode>()) 
             {
                 List<IConnectionInfo> SeqConnections = FindAllOutgoingSequenceConnections(Graph, startNode);
+                if (SeqConnections.Count == 0) continue;
                 Debug.Assert(SeqConnections.Count == 1);
                 ScopeFunction?.Invoke(startNode, SeqConnections[0], ScopeType.GraphStart, true);
                 traverse_paths(Graph, new(startNode.GraphIdentifier), SeqConnections[0], NodeFunction, ScopeFunction);
