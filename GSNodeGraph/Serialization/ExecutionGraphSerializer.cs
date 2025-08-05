@@ -62,14 +62,32 @@ namespace Gradientspace.NodeGraph
         }
 
 
-        public static void Save(ExecutionGraph graph, Stream utf8Stream, INodeGraphLayoutProvider? LayoutProvider = null)
+        public struct SaveGraphOptions
+        {
+            public INodeGraphLayoutProvider? LayoutProvider = null;
+
+            public Func<NodeBase, bool>? IncludeNodeFunc = null;
+
+            public SaveGraphOptions() { }
+        }
+
+
+        public static void Save(
+            ExecutionGraph graph, 
+            Stream utf8Stream,
+            SaveGraphOptions options)
         {
             SerializedGraph Serialized = new SerializedGraph();
 
+            HashSet<int> SerializedNodeIDs = new HashSet<int>();
             foreach (INodeInfo nodeInfo in graph.EnumerateNodes())
             {
                 NodeHandle handle = new NodeHandle(nodeInfo.Identifier);
                 if (graph.FindNodeInfoFromHandle(handle, out var InternalInfo) == false)
+                    continue;
+
+                // skip filtered nodes
+                if (options.IncludeNodeFunc != null && options.IncludeNodeFunc(InternalInfo.Node) == false)
                     continue;
 
                 NodeBase node = InternalInfo.Node;
@@ -81,8 +99,8 @@ namespace Gradientspace.NodeGraph
                 sni.NodeClassType = nodeType.ClassType.FullName!;
                 sni.NodeClassVariant = nodeType.Variant;
 
-                if (LayoutProvider != null)
-                    sni.Location = LayoutProvider.GetLocationStringForNode(InternalInfo.Identifier);
+                if (options.LayoutProvider != null)
+                    sni.Location = options.LayoutProvider.GetLocationStringForNode(InternalInfo.Identifier);
 
                 node.CollectCustomDataItems(out NodeCustomData? CustomData);
                 if (CustomData != null ) {
@@ -95,21 +113,30 @@ namespace Gradientspace.NodeGraph
                     sni.InputConstants.AddRange(SavedInputConstants);
 
                 Serialized.Nodes.Add(sni);
+                SerializedNodeIDs.Add(node.GraphIdentifier);
             }
 
             foreach (IConnectionInfo connectionInfo in graph.EnumerateConnections(EConnectionType.Data))
             {
+                if (SerializedNodeIDs.Contains(connectionInfo.FromNodeIdentifier) == false ||
+                     SerializedNodeIDs.Contains(connectionInfo.ToNodeIdentifier) == false)
+                    continue;
+
                 Serialized.DataConnections.Add(new Connection(connectionInfo));
             }
             foreach (IConnectionInfo connectionInfo in graph.EnumerateConnections(EConnectionType.Sequence))
             {
+                if (SerializedNodeIDs.Contains(connectionInfo.FromNodeIdentifier) == false ||
+                     SerializedNodeIDs.Contains(connectionInfo.ToNodeIdentifier) == false)
+                    continue;
+
                 Serialized.SequenceConnections.Add(new Connection(connectionInfo));
             }
 
-            JsonSerializerOptions options = new JsonSerializerOptions();
-            options.WriteIndented = true;
+            JsonSerializerOptions jsonOptions = new JsonSerializerOptions();
+            jsonOptions.WriteIndented = true;
 
-            JsonSerializer.Serialize<SerializedGraph>(utf8Stream, Serialized, options);
+            JsonSerializer.Serialize<SerializedGraph>(utf8Stream, Serialized, jsonOptions);
         }
 
 
@@ -325,6 +352,19 @@ namespace Gradientspace.NodeGraph
             }
 
             return (bNodeErrors == false) && (bConnectionErrors == false);
+        }
+
+
+
+
+        public static bool IsSerializedGraphJSon(string json)
+        {
+            //bool bHasAssemblies = json.Contains("\"Assemblies\"");
+            bool bHasNodes = json.Contains("\"Nodes\"");
+            bool bHasDataConnections = json.Contains("\"DataConnections\"");
+            bool bHasSequenceConnections = json.Contains("\"SequenceConnections\"");
+            bool bHasNodeClassType = json.Contains("\"NodeClassType\"");
+            return (bHasNodes && bHasDataConnections && bHasSequenceConnections && bHasNodeClassType);
         }
 
 
