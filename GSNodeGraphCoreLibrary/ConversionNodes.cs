@@ -10,7 +10,7 @@ namespace Gradientspace.NodeGraph.Nodes
 {
     [GraphNodeNamespace("Gradientspace.String")]
     [GraphNodeUIName("To String")]
-    public class ToStringNode : StandardNode
+    public class ToStringNode : StandardNode, ICodeGen
     {
         public static string InputName { get { return "object"; } }
         public static string OutputName { get { return "string"; } }
@@ -46,6 +46,18 @@ namespace Gradientspace.NodeGraph.Nodes
                 RequestedDataOut.SetItemValue(OutputIndex, result);
             }
         }
+
+
+        // ICodeGen interface
+        public void GetCodeOutputNames(out string[]? OutputNames) {
+            OutputNames = ["Str"];
+        }
+        public string GenerateCode(string[]? Arguments, string[]? UseOutputNames)
+        {
+            CodeGenUtils.CheckArgsAndOutputs(Arguments, 1, UseOutputNames, 1, this.ToString());
+            return $"{UseOutputNames![0]} = {Arguments![0]}.ToString();";
+        }
+
     }
 
 

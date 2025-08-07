@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 namespace Gradientspace.NodeGraph
 {
     [ClassHierarchyNode]
-    public abstract class LibraryFunctionNodeBase : NodeBase
+    public abstract class LibraryFunctionNodeBase : NodeBase, ICodeGen
     {
         public Type? LibraryClass { get; protected set; } = null;
         public MethodInfo? Function { get; protected set; } = null;
@@ -113,7 +113,41 @@ namespace Gradientspace.NodeGraph
 		{
 			return $"{LibraryClass!.Name}.{Function!.Name}";
 		}
-	}
+
+
+        // ICodeGen interface
+        public void GetCodeOutputNames(out string[]? OutputNames)
+        {
+            // how to handle ref args... ??
+
+            OutputNames = new string[Outputs.Count];
+            for (int i = 0; i < OutputNames.Length; i++)
+                OutputNames[i] = CodeGenUtils.SanitizeVarName(Outputs[i].Name);
+        }
+        public string GenerateCode(string[]? Arguments, string[]? UseOutputNames)
+        {
+            CodeGenUtils.CheckArgsAndOutputs(Arguments, Inputs.Count, UseOutputNames, Outputs.Count, this.ToString());
+
+            string accumCall = "";
+            if (FunctionInfo!.ReturnType != typeof(void)) {
+                accumCall = $"{FunctionInfo!.ReturnType.ToString()} {UseOutputNames![0]} = ";
+            }
+            accumCall += $"{LibraryClass!.Name}.{Function!.Name}(";
+
+            for ( int i = 0; i < Inputs.Count; ++i ) 
+            {
+                string arg = Arguments![i];
+                accumCall += arg;
+
+                if (i < Inputs.Count-1)
+                    accumCall += ", ";
+            }
+            
+
+            accumCall += ");";
+            return accumCall;
+        }
+    }
 
 
 

@@ -51,6 +51,8 @@ namespace Gradientspace.NodeGraph
         //! the type of this node in the NodeLibrary that owns it
         public NodeType? LibraryNodeType { get; private set; } = null;
         
+        public NodeHandle Handle { get { return new(GraphIdentifier); } }
+
         //! configure external NodeGraph/NodeLibrary info in an instance of this node
         internal void SetOwningGraphInfo(int useGraphIdentifier, NodeType? useNodeType)
         {

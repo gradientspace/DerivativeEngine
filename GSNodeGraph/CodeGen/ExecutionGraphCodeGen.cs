@@ -100,9 +100,14 @@ namespace Gradientspace.NodeGraph
         }
 
 
-        protected string allocate_scope_variable(string baseName)
+        int variable_counter = 0;
+        protected string allocate_scope_variable(string? baseName)
         {
-            return baseName + "0";
+            if (baseName == null)
+                baseName = "var";
+
+            int num = variable_counter++;
+            return baseName + num.ToString();
         }
 
 
@@ -166,28 +171,25 @@ namespace Gradientspace.NodeGraph
             LibraryFunctionNodeBase libraryFuncNode,
             out IConnectionInfo NextConnection)
         {
-            string returnString = "";
-            FunctionNodeInfo funcInfo = libraryFuncNode.FunctionInfo!;
-            if ( funcInfo.ReturnType != typeof(void)) {
-                string returnVarName = (funcInfo.ReturnName.Length > 0) ? funcInfo.ReturnName : "return";
-                returnVarName = allocate_scope_variable(returnVarName);
-                returnString = $"{funcInfo.ReturnType.ToString()} {returnVarName} = ";
-            }
+            string comment = $"// [{libraryFuncNode.GraphIdentifier}][library_node] {libraryFuncNode.ToString()}";
 
-            string argsString = "...";
+            string[] inputTokens = find_input_tokens(libraryFuncNode);
+            string[]? OutputVarNames = find_output_variable_names(libraryFuncNode);
+
+            string callingCode = libraryFuncNode.GenerateCode(inputTokens, OutputVarNames);
+
+            codeBuilder.AppendLine(comment);
+            codeBuilder.AppendBlock(callingCode);
+            codeBuilder.AppendEmptyLine();
 
             Type usingClass = libraryFuncNode.LibraryClass!;
             if (usingClass.Namespace != null)
                 add_namespace(usingClass.Namespace);
-            string functionCall = $"{usingClass.Name}.{libraryFuncNode.Function!.Name}( {argsString} );";
-
-            codeBuilder.AppendLine($"// [{libraryFuncNode.GraphIdentifier}][library_node] {libraryFuncNode.ToString()}");
-            codeBuilder.AppendLine(returnString + functionCall);
-            codeBuilder.AppendEmptyLine();
-
 
             get_outgoing_seq_connection_single(libraryFuncNode, out NextConnection);
         }
+
+
 
 
         protected virtual void process_basic_node(
@@ -196,13 +198,160 @@ namespace Gradientspace.NodeGraph
             out IConnectionInfo NextConnection)
         {
             string useName = baseNode.GetNodeName();
-            codeBuilder.AppendOpenBrace();
-            codeBuilder.AppendLine($"// [{baseNode.GraphIdentifier}][basic_node] {useName}");
-            codeBuilder.AppendCloseBrace();
-            codeBuilder.AppendEmptyLine();
+            string comment = $"// [{baseNode.GraphIdentifier}][basic_node] {useName}";
+
+            string[]? OutputVarNames = null;
+            if (baseNode is ICodeGen codeGen) {
+
+                string[] inputTokens = find_input_tokens(baseNode);
+                OutputVarNames = find_output_variable_names(codeGen);
+
+                string callingCode = codeGen.GenerateCode(inputTokens, OutputVarNames);
+
+                codeBuilder.AppendLine(comment);
+                codeBuilder.AppendBlock(callingCode);
+                codeBuilder.AppendEmptyLine();
+
+            } else {
+                codeBuilder.AppendOpenBrace();
+                codeBuilder.AppendLine(comment);
+                codeBuilder.AppendCloseBrace();
+                codeBuilder.AppendEmptyLine();
+            }
+
+            // remember output variable names
+            save_variables(baseNode, OutputVarNames);
 
             get_outgoing_seq_connection_single(baseNode, out NextConnection);
         }
+
+
+
+
+
+        protected struct GeneratedVar
+        {
+            public string Key;
+            public NodeBase Node;
+            public string OutputName;
+
+            public string VariableName;
+
+            public GeneratedVar(NodeBase node, string outputName, string varName)
+            {
+                Node = node;
+                OutputName = outputName;
+                VariableName = varName;
+                Key = MakeKey(node.GraphIdentifier, outputName);
+            }
+
+            public static string MakeKey(int NodeID, string outputName)
+            {
+                return $"Node{NodeID}::{outputName}";
+            }
+        }
+        Dictionary<string, GeneratedVar> CurrentVariables = new Dictionary<string, GeneratedVar>();
+
+
+        protected struct InputCode
+        {
+            public string Code;
+
+            public InputCode() { 
+                Code = "/*(undefined)*/"; 
+            }
+
+            public void TrySet(string? code)
+            {
+                if (code != null)
+                    Code = code;
+            }
+        }
+
+
+        protected bool find_node_input(NodeBase baseNode, INodeInputInfo inputInfo, out InputCode inputCode)
+        {
+            inputCode = new();
+
+            IConnectionInfo connection = Graph.FindConnectionTo(baseNode.GraphIdentifier, inputInfo.InputName, EConnectionType.Data);
+            if (connection == IConnectionInfo.Invalid) 
+            {
+                (object? constVal, bool bExists) = Graph.GetConstantValueForInput(baseNode.Handle, inputInfo.InputName);
+                if (bExists == false)
+                    return false;
+
+                if (constVal == null) 
+                {
+                    inputCode.TrySet("null");
+                }
+                else if (constVal is float f) 
+                {
+                    inputCode.TrySet(f.ToString() + "f");
+                } 
+                else if (constVal is double d) 
+                {
+                    inputCode.TrySet(d.ToString());
+                }
+                else if (constVal is string s) 
+                {
+                    // todo need to possibly escape string chars?
+                    inputCode.TrySet("\"" + s + "\"");
+                }
+                else 
+                {
+                    inputCode.TrySet(constVal.ToString());
+                }
+                return true;
+            } 
+            else 
+            {
+                string VarKey = GeneratedVar.MakeKey(connection.FromNodeIdentifier, connection.FromNodeOutputName);
+                if (CurrentVariables.TryGetValue(VarKey, out GeneratedVar variable)) {
+                    inputCode.TrySet(variable.VariableName);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+
+        protected string[] find_input_tokens(NodeBase baseNode)
+        {
+            List<string> inputs = new List<string>();
+            foreach (INodeInputInfo input in baseNode.EnumerateInputs()) 
+            {
+                bool bFound = find_node_input(baseNode, input, out InputCode inputCode);
+                inputs.Add(inputCode.Code);
+            }
+            return inputs.ToArray();
+        }
+
+        protected string[]? find_output_variable_names(ICodeGen codeGen)
+        {
+            string[]? OutputVarNames = null;
+            codeGen.GetCodeOutputNames(out OutputVarNames);
+            if (OutputVarNames != null) 
+            {
+                for (int i = 0; i < OutputVarNames.Length; i++)
+                    OutputVarNames[i] = allocate_scope_variable(OutputVarNames[i]);
+            }
+            return OutputVarNames;
+        }
+
+        protected void save_variables(NodeBase node, string[]? outputVarNames)
+        {
+            INodeOutputInfo[] outputs = node.EnumerateOutputs().ToArray();
+            if (outputVarNames != null && outputs.Length == outputVarNames.Length) 
+            {
+                for (int i = 0; i <  outputs.Length; i++) 
+                {
+                    GeneratedVar newVar = new GeneratedVar(node, outputs[i].OutputName, outputVarNames[i]);
+                    CurrentVariables.Add(newVar.Key, newVar);
+                }
+            }
+        }
+
 
 
 

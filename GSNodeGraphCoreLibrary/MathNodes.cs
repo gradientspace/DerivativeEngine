@@ -3,7 +3,7 @@ using Gradientspace.NodeGraph;
 
 namespace Gradientspace.NodeGraph.Nodes
 {
-    public abstract class StandardBinaryFloatOpNode : StandardNode
+    public abstract class StandardBinaryFloatOpNode : StandardNode, ICodeGen
     {
         public static string Operand1Name { get { return "A"; } }
         public static string Operand2Name { get { return "B"; } }
@@ -35,6 +35,17 @@ namespace Gradientspace.NodeGraph.Nodes
         }
 
         public abstract float ComputeResult(float A, float B);
+
+
+        // ICodeGen interface
+        public void GetCodeOutputNames(out string[]? OutputNames) {
+            OutputNames = ["Value"];
+        }
+        public string GenerateCode(string[]? Arguments, string[]? UseOutputNames)
+        {
+            CodeGenUtils.CheckArgsAndOutputs(Arguments, 2, UseOutputNames, 1, this.ToString());
+            return $"{UseOutputNames![0]} = {Arguments![0]} + {Arguments![1]};";
+        }
     }
 
     [GraphNodeNamespace("Gradientspace.Math")]
@@ -73,6 +84,12 @@ namespace Gradientspace.NodeGraph.Nodes
         public static float Subtract(float A, float MinusB)
         {
             return A - MinusB;
+        }
+
+        [NodeFunction]
+        public static float Pow(float A, float B = 2.0f)
+        {
+            return (float)Math.Pow(A, B);
         }
 
     }
