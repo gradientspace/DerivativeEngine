@@ -11,6 +11,13 @@ namespace Gradientspace.NodeGraph
             return A + B;
         }
 
+        [NodeFunction]
+        public static bool Contains(string String, string Contains, bool bIgnoreCase = true)
+        {
+            StringComparison useComparison = (bIgnoreCase) ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+            return String.Contains(Contains, useComparison);
+        }
+
     }
 
 }

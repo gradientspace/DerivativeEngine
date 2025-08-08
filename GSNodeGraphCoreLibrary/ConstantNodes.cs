@@ -1,6 +1,5 @@
 // Copyright Gradientspace Corp. All Rights Reserved.
 using Gradientspace.NodeGraph;
-using Microsoft.VisualBasic.FileIO;
 using System.Diagnostics;
 using System.Reflection;
 
@@ -8,7 +7,7 @@ namespace Gradientspace.NodeGraph.Nodes
 {
     //! this only works for POD types...
     [ClassHierarchyNode]
-    public class GenericPODConstantNode<T> : StandardNode 
+    public class GenericPODConstantNode<T> : StandardNode, ICodeGen 
         where T : struct
     {
         public GenericPODConstantNode()
@@ -29,7 +28,7 @@ namespace Gradientspace.NodeGraph.Nodes
         {
             int OutputIndex = RequestedDataOut.IndexOfItem(ValueOutputName);
             if (OutputIndex == -1)
-                throw new Exception("FloatConstantNode: output not found");
+                throw new Exception($"{GetDefaultNodeName()}: output not found");
 
             T Value = new T();
             if ( DataIn.FindItemValueStrict<T>(ValueInputName, ref Value) == false )
@@ -42,6 +41,17 @@ namespace Gradientspace.NodeGraph.Nodes
             }
 
             RequestedDataOut.SetItemValue(OutputIndex, Value);
+        }
+
+        public void GetCodeOutputNames(out string[]? OutputNames)
+        {
+            OutputNames = [ValueOutputName];
+        }
+        public string GenerateCode(string[]? Arguments, string[]? UseOutputNames)
+        {
+            CodeGenUtils.CheckArgsAndOutputs(Arguments, 1, UseOutputNames, 1, "GenericPODConstantNode");
+            string useTypeName = CodeGenUtils.GetCSharpTypeDecl(typeof(T));
+            return $"{useTypeName} {UseOutputNames![0]} = {Arguments![0]};";
         }
     }
 
@@ -68,11 +78,17 @@ namespace Gradientspace.NodeGraph.Nodes
         public override string GetDefaultNodeName() { return "Make Double"; }
     }
 
+    [GraphNodeNamespace("Gradientspace.Constants")]
+    [GraphNodeUIName("Make Boolean")]
+    public class BoolConstantNode : GenericPODConstantNode<bool>
+    {
+        public override string GetDefaultNodeName() { return "Make Boolean"; }
+    }
 
 
     [GraphNodeNamespace("Gradientspace.Constants")]
     [GraphNodeUIName("Make String")]
-    public class StringConstantNode : StandardNode
+    public class StringConstantNode : StandardNode, ICodeGen
     {
         public override string GetDefaultNodeName() { return "Make String"; }
 
@@ -98,6 +114,16 @@ namespace Gradientspace.NodeGraph.Nodes
             DataIn.FindItemValueStrict<string>(ValueInputName, ref Result);
             RequestedDataOut.SetItemValue(OutputIndex, Result);
         }
+
+        public void GetCodeOutputNames(out string[]? OutputNames)
+        {
+            OutputNames = ["Str"];
+        }
+        public string GenerateCode(string[]? Arguments, string[]? UseOutputNames)
+        {
+            CodeGenUtils.CheckArgsAndOutputs(Arguments, 1, UseOutputNames, 1, "StringConstantNode");
+            return $"string {UseOutputNames![0]} = {Arguments![0]};";
+        }
     }
 
 
@@ -105,11 +131,8 @@ namespace Gradientspace.NodeGraph.Nodes
 
 
 
-
-
-
     [ClassHierarchyNode]
-    public class MakeStructNode<T> : StandardNode
+    public class MakeStructNode<T> : StandardNode, ICodeGen
         where T : struct
     {
         public MakeStructNode()
@@ -161,6 +184,18 @@ namespace Gradientspace.NodeGraph.Nodes
             }
            
             RequestedDataOut.SetItemValue(OutputIndex, resultStruct);
+        }
+
+
+        public void GetCodeOutputNames(out string[]? OutputNames)
+        {
+            OutputNames = [CodeGenUtils.SanitizeVarName(typeof(T).Name)];
+        }
+        public string GenerateCode(string[]? Arguments, string[]? UseOutputNames)
+        {
+            CodeGenUtils.CheckArgsAndOutputs(Arguments, Inputs.Count, UseOutputNames, 1, "MakeStructNode");
+            throw new NotImplementedException();
+            //return $"string {UseOutputNames![0]} = {Arguments![0]};";
         }
     }
 

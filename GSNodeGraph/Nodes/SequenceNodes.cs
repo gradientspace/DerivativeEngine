@@ -72,7 +72,7 @@ namespace Gradientspace.NodeGraph
 
         public override string GetDefaultNodeName()
         {
-            return "Branch";
+            return "IfElse";
         }
 
         public BranchNode()
