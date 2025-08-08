@@ -33,11 +33,11 @@ namespace Gradientspace.NodeGraph
 
 
         public string DebugString {
-            get { return GetString(); }
+            get { return GetCode(); }
         }
 
 
-        public virtual string GetString()
+        public virtual string GetCode()
         {
             return Builder.ToString();
         }
