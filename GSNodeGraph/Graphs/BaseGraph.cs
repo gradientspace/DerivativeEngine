@@ -145,37 +145,7 @@ namespace Gradientspace.NodeGraph
         // todo this should return a struct that includes (eg) info about whether there will be a conversion, etc
         public virtual bool CanConnectTypes(GraphDataType FromOutputDataType, GraphDataType ToInputDataType)
         {
-            Type FromOutputType = FromOutputDataType.DataType;
-            Type ToInputType = ToInputDataType.DataType;
-
-            // TODO: conversions should perhaps come after IsDynamic check? The issue is that currently
-            // python inputs are marked as Dynamic, which probably should not be the case...do we still need that?
-
-			// check for registered automatic conversions
-			if (GlobalDataConversionLibrary.Find(FromOutputDataType, ToInputDataType, out IDataTypeConversion? foundConversion))
-				return true;
-
-            // if this is a dynamic input, check it's ExtendedTypeInfo to verify type compatibility
-			if (ToInputDataType.IsDynamic) {
-                return ToInputDataType.ExtendedTypeInfo?.IsCompatibleWith(FromOutputDataType) ?? false;
-            }
-
-            if (FromOutputType == ToInputType)      // can always connect identical types
-                return true;
-            if (ToInputType == typeof(object))      // can always connect anything to object
-                return true;
-            if (FromOutputType.IsSubclassOf(ToInputType))   // can always cast to base class
-                return true;
-
-            // this should cover interfaces, maybe operator= ?
-            if (FromOutputType.IsAssignableTo(ToInputType))
-                return true;
-
-            // currently allowing all number casts
-            if (TypeUtils.IsNumericType(FromOutputType) && TypeUtils.IsNumericType(ToInputType))
-                return true;
-
-            return false;
+            return TypeUtils.CanConnectFromTo(FromOutputDataType, ToInputDataType);
         }
 
 

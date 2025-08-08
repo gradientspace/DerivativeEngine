@@ -59,6 +59,48 @@ namespace Gradientspace.NodeGraph
         }
 
 
+        // todo this should return a struct that includes (eg) info about whether there will be a conversion, etc
+        public static bool CanConnectFromTo(Type FromType, Type ToType)
+        {
+            if (FromType == ToType)      // can always connect identical types
+                return true;
+            if (ToType == typeof(object))      // can always connect anything to object
+                return true;
+            if (FromType.IsSubclassOf(ToType))   // can always cast to base class
+                return true;
+
+            // this should cover interfaces, maybe operator= ?
+            if (FromType.IsAssignableTo(ToType))
+                return true;
+
+            // currently allowing all number casts
+            if (IsNumericType(FromType) && IsNumericType(ToType))
+                return true;
+
+            return false;
+        }
+
+
+        // todo this should return a struct that includes (eg) info about whether there will be a conversion, etc
+        public static bool CanConnectFromTo(GraphDataType FromType, GraphDataType ToType)
+        {
+            // TODO: conversions should perhaps come after IsDynamic check? The issue is that currently
+            // python inputs are marked as Dynamic, which probably should not be the case...do we still need that?
+
+            // check for registered automatic conversions
+            if (GlobalDataConversionLibrary.Find(FromType, ToType, out IDataTypeConversion? foundConversion))
+                return true;
+
+            // if this is a dynamic input, check it's ExtendedTypeInfo to verify type compatibility
+            if (ToType.IsDynamic) {
+                return ToType.ExtendedTypeInfo?.IsCompatibleWith(FromType) ?? false;
+            }
+
+            // fall back to standard C# restrictions
+            return TypeUtils.CanConnectFromTo(FromType.DataType, ToType.DataType);
+        }
+
+
         public static bool IsLossyNumericConversion(Type From, Type To)
         {
             bool bFromIsInt = IsIntegerType(From, out bool bFromIsUnsigned, out int FromBytes);
