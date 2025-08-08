@@ -242,10 +242,10 @@ namespace Gradientspace.NodeGraph
 
             // todo much more filtering here...
 
-            string UseName = type.Name;
+            string? CustomName = null;
             foreach (GraphNodeUIName UINameAttrib in type.GetCustomAttributes<GraphNodeUIName>()) {
                 if (UINameAttrib.UIName.Length > 0)
-                    UseName = UINameAttrib.UIName;
+                    CustomName = UINameAttrib.UIName;
             }
 
             try
@@ -254,7 +254,8 @@ namespace Gradientspace.NodeGraph
                 Debug.Assert(nodeArchetype != null);
                 if (nodeArchetype != null)
                 {
-                    NodeType nodeType = new NodeType(type, UseName);
+                    string NodeUIName = (CustomName != null) ? CustomName : nodeArchetype.GetNodeName();
+                    NodeType nodeType = new NodeType(type, NodeUIName);
                     nodeType.NodeArchetype = nodeArchetype;
 
                     if (GetNodeNamespace(type, out string Namespace))
