@@ -60,7 +60,7 @@ namespace Gradientspace.NodeGraph.PythonNodes
             return IsTypeCompatibleFunc(incomingType);
         }
         public virtual string? GetCustomTypeString() {
-            return "tuple (python)";
+            return "tuple [Python]";
         }
     }
 

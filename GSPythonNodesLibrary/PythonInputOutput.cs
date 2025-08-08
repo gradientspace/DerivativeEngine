@@ -29,7 +29,7 @@ namespace Gradientspace.NodeGraph.PythonNodes
 		}
 		public virtual string? GetCustomTypeString()
 		{
-			return PyType.GetTypeString() + " (python)";
+			return PyType.GetTypeString() + " [Python]";
 		}
 	}
 

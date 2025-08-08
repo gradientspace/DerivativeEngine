@@ -15,7 +15,7 @@ namespace Gradientspace.NodeGraph.Nodes
             AddOutput(ValueOutputName, new StandardNodeOutput<T>());
 
 			StandardNodeInputBase input = new StandardNodeInputWithConstant<T>(new T());
-            input.Flags = ENodeInputFlags.IsNodeConstant;
+            input.Flags = ENodeInputFlags.IsNodeConstant | ENodeInputFlags.HiddenLabel;
 			AddInput(ValueInputName, input);
         }
 
@@ -65,6 +65,13 @@ namespace Gradientspace.NodeGraph.Nodes
     }
 
     [GraphNodeNamespace("Gradientspace.Constants")]
+    [GraphNodeUIName("Make Int64")]
+    public class Int64ConstantNode : GenericPODConstantNode<long>
+    {
+        public override string GetDefaultNodeName() { return "Make Int64"; }
+    }
+
+    [GraphNodeNamespace("Gradientspace.Constants")]
     [GraphNodeUIName("Make Float")]
     public class FloatConstantNode : GenericPODConstantNode<float>
     {
@@ -96,7 +103,7 @@ namespace Gradientspace.NodeGraph.Nodes
         {
             AddOutput(ValueOutputName, new StandardNodeOutput<string>());
 			StandardStringNodeInput input = new StandardStringNodeInput();
-            input.Flags = ENodeInputFlags.IsNodeConstant;
+            input.Flags = ENodeInputFlags.IsNodeConstant | ENodeInputFlags.HiddenLabel;
 			AddInput(ValueInputName, input);
         }
 
