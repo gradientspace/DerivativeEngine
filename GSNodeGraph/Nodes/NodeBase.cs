@@ -174,12 +174,18 @@ namespace Gradientspace.NodeGraph
         //
         // INode Interface
         // 
-        public string GetNodeName()     
+        public virtual string GetNodeName()     
         {
             //return GetDefaultNodeName();
             // returns default node name unless a custom name has been defined
             return GetCustomNodeName();
         }
+        public virtual string? GetNodeNamespace()
+        {
+            System.Type classType = GetType();
+            return classType.Namespace ?? "Unknown";
+        }
+
         public IEnumerable<INodeInputInfo> EnumerateInputs()
         {
             foreach (NodeInputInfo InputInfo in Inputs)

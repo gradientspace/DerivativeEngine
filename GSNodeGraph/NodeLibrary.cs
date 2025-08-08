@@ -70,17 +70,28 @@ namespace Gradientspace.NodeGraph
             }
         }
 
-        public virtual IEnumerable<NodeType> EnumerateAllNodesWithFirstPinType(Type firstInputPinType)
+        public virtual IEnumerable<NodeType> EnumerateAllNodesWithFirstAssignablePinType(GraphDataType fromPinDataType)
         {
 			wait_for_library_build();
 
 			foreach (NodeTypeInfo info in Library)
             {
                 if (info.nodeType.NodeArchetype == null || info.bIsSystemNode) continue;
-
+       
+                ENodeInputFlags ignoreFlags = ENodeInputFlags.IsNodeConstant | ENodeInputFlags.Hidden;
                 foreach (INodeInputInfo inputInfo in info.nodeType.NodeArchetype.EnumerateInputs())
                 {
-                    if (inputInfo.DataType.DataType == firstInputPinType)
+                    ENodeInputFlags flags = inputInfo.Input.GetInputFlags();
+                    if ((flags & ignoreFlags) != 0)
+                        continue;
+
+                    // TODO: BaseGraph.CanConnectTypes(GraphDataType, GraphDataType) is probably what we actually
+                    // want to call here, because that considers conversion extensions, etc. However
+                    // then we need ExecGraph. Could pass as argument? Or pass check funciton as argument?
+
+                    bool bCanConnectTypes = TypeUtils.CanConnectFromTo(fromPinDataType, inputInfo.DataType);
+
+                    if (bCanConnectTypes)
                         yield return info.nodeType;
                     break;
                 }
@@ -258,7 +269,7 @@ namespace Gradientspace.NodeGraph
                     NodeType nodeType = new NodeType(type, NodeUIName);
                     nodeType.NodeArchetype = nodeArchetype;
 
-                    if (GetNodeNamespace(type, out string Namespace))
+                    if (GetNodeNamespace(type, nodeArchetype, out string Namespace))
                         nodeType.UICategory = Namespace;
 
                     NodeTypeInfo typeInfo = new NodeTypeInfo(nodeType);
@@ -352,19 +363,16 @@ namespace Gradientspace.NodeGraph
         }
 
 
-		protected static bool GetNodeNamespace(Type type, out string Namespace)
-		{
-			Namespace = type.FullName!;
-			GraphNodeNamespace? NamespaceAttrib = type.GetCustomAttribute<GraphNodeNamespace>();
-			if (NamespaceAttrib == null)
-				return false;
-			if (NamespaceAttrib.Namespace == null || NamespaceAttrib.Namespace.Length == 0)
-				return false;
-			Namespace = NamespaceAttrib.Namespace;
-			return true;
-		}
+        protected static bool GetNodeNamespace(Type nodeType, INode archetypeNode, out string Namespace)
+        {
+            Namespace = archetypeNode.GetNodeNamespace() ?? "Unknown";
+            GraphNodeNamespace? NamespaceAttrib = nodeType.GetCustomAttribute<GraphNodeNamespace>();
+            if (NamespaceAttrib != null)
+                Namespace = NamespaceAttrib.Namespace;
+            return (Namespace.Length > 0);
+        }
 
-		protected static void append_to_list(ref List<string>? list, string append)
+        protected static void append_to_list(ref List<string>? list, string append)
         {
             if (list == null) list = new List<string>();
             list.Add(append);
