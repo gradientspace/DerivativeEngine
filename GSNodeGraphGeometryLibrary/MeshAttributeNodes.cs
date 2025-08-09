@@ -4,7 +4,7 @@ using g3;
 
 namespace Gradientspace.NodeGraph.Geometry3
 {
-    [GraphNodeFunctionLibrary("Geometry3.MeshAttributes")]
+    [NodeFunctionLibrary("Geometry3.MeshAttributes")]
     public static class Geometry3MeshAttributesFunctionLibrary
     {
         [NodeFunction]

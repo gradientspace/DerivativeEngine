@@ -5,7 +5,7 @@ using g3;
 namespace Gradientspace.NodeGraph.Geometry3
 {
 
-    [GraphNodeFunctionLibrary("Geometry3.Primitives")]
+    [NodeFunctionLibrary("Geometry3.Primitives")]
     public static class Geometry3MeshPrimitivesFunctionLibrary
     {
         [NodeFunction]

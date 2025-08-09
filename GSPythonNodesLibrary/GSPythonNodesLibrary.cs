@@ -18,7 +18,7 @@ namespace Gradientspace.NodeGraph.PythonNodes
 
 
 
-	[GraphNodeFunctionLibrary("PythonConversions")]
+	[NodeFunctionLibrary("PythonConversions")]
 	public static class GSPythonConversionsLibrary
 	{
 

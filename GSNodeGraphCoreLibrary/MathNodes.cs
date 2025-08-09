@@ -69,7 +69,7 @@ namespace Gradientspace.NodeGraph.Nodes
     }
 
 
-    [GraphNodeFunctionLibrary("Gradientspace.Math")]
+    [NodeFunctionLibrary("Gradientspace.Math")]
     public static class StandardMathFunctionLibrary
     {
 

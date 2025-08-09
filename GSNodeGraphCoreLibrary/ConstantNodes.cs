@@ -207,22 +207,4 @@ namespace Gradientspace.NodeGraph.Nodes
     }
 
 
-    //public struct TestVector3
-    //{
-    //    public float x = 1;
-    //    public float y = 2;
-    //    public float z = 3;
-    //    //int w = 7;
-    //    public bool flag = true;
-    //    public TestVector3() { }
-    //}
-
-    //[GraphNodeFunctionLibrary("Constants")]
-    //[GraphNodeUIName("Make TestVector3")]
-    //public class MakeTestVector3 : MakeStructNode<TestVector3>
-    //{
-    //    public override string GetDefaultNodeName() { return "Make TestVector3"; }
-    //}
-
-
 }

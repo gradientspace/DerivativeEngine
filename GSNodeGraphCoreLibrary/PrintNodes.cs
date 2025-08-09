@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace Gradientspace.NodeGraph.Nodes
 {
 
-	[GraphNodeFunctionLibrary("Gradientspace.IO")]
+	[NodeFunctionLibrary("Gradientspace.IO")]
 	public static class GradientspaceIOFunctionLibrary
 	{
 

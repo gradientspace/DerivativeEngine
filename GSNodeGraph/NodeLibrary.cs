@@ -353,7 +353,7 @@ namespace Gradientspace.NodeGraph
 		protected static bool IsFunctionLibraryClass(Type type, out string LibraryName)
         {
             LibraryName = type.FullName!;
-            GraphNodeFunctionLibrary? LibraryAttrib = type.GetCustomAttribute<GraphNodeFunctionLibrary>();
+            NodeFunctionLibrary? LibraryAttrib = type.GetCustomAttribute<NodeFunctionLibrary>();
             if (LibraryAttrib == null)
                 return false;
             if (LibraryAttrib.LibraryName == null || LibraryAttrib.LibraryName.Length == 0)
@@ -388,7 +388,7 @@ namespace Gradientspace.NodeGraph
         protected static List<string>? CollectMappedLibraryNames(Type type)
         {
             List<string>? result = null;
-            foreach (MappedLibraryName mappedName in type.GetCustomAttributes<MappedLibraryName>())
+            foreach (MappedFunctionLibraryName mappedName in type.GetCustomAttributes<MappedFunctionLibraryName>())
                 append_to_list(ref result, mappedName.MappedName);
             return result;
         }

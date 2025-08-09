@@ -54,7 +54,7 @@ namespace Gradientspace.NodeGraph
 				foreach (Type type in assembly.GetTypes())
 				{
 					bool bCheckForConversions =
-						(type.GetCustomAttribute<GraphNodeFunctionLibrary>() != null);
+						(type.GetCustomAttribute<NodeFunctionLibrary>() != null);
 					if (bCheckForConversions == false)
 						continue;
 

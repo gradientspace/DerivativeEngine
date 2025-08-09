@@ -3,7 +3,7 @@ using Gradientspace.NodeGraph;
 
 namespace Gradientspace.NodeGraph
 {
-    [GraphNodeFunctionLibrary("Gradientspace.String")]
+    [NodeFunctionLibrary("Gradientspace.String")]
     public static class GradientspaceStringFunctionLibrary
     {
         [NodeFunction]

@@ -4,7 +4,7 @@ using g3;
 
 namespace Gradientspace.NodeGraph.Geometry
 {
-    [GraphNodeFunctionLibrary("Geometry3.Quaternion")]
+    [NodeFunctionLibrary("Geometry3.Quaternion")]
     public static class Geometry3QuaternionFunctionLibrary
     {
         [NodeFunction]

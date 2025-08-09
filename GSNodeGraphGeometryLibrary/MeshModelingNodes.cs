@@ -11,7 +11,7 @@ namespace Gradientspace.NodeGraph.Geometry3
         Difference
     }
 
-    [GraphNodeFunctionLibrary("Geometry3.MeshModeling")]
+    [NodeFunctionLibrary("Geometry3.MeshModeling")]
     public static class Geometry3MeshModelingFunctionLibrary
     {
         [NodeFunction]

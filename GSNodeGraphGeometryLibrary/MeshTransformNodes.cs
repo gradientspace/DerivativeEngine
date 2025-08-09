@@ -4,8 +4,8 @@ using g3;
 
 namespace Gradientspace.NodeGraph.Geometry
 {
-    [GraphNodeFunctionLibrary("Geometry3.MeshTransforms")]
-    [MappedLibraryName("Geometry.MeshTransforms")]
+    [NodeFunctionLibrary("Geometry3.MeshTransforms")]
+    [MappedFunctionLibraryName("Geometry.MeshTransforms")]
     public static class GeometryMeshTransformFunctionLibrary
     {
         [NodeFunction]

@@ -4,7 +4,7 @@ using g3;
 
 namespace Gradientspace.NodeGraph.Geometry
 {
-    [GraphNodeFunctionLibrary("Geometry3.Remeshing")]
+    [NodeFunctionLibrary("Geometry3.Remeshing")]
     public static class GeometryRemeshingFunctionLibrary
     {
         [NodeFunction]

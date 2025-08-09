@@ -5,8 +5,8 @@ using System.IO;
 
 namespace Gradientspace.NodeGraph.Geometry
 {
-    [GraphNodeFunctionLibrary("Geometry3.MeshIO")]
-    [MappedLibraryName("Geometry.MeshIO")]
+    [NodeFunctionLibrary("Geometry3.MeshIO")]
+    [MappedFunctionLibraryName("Geometry.MeshIO")]
     public static class GeometryMeshIOFunctionLibrary
     {
 
