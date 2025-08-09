@@ -38,7 +38,7 @@ namespace Gradientspace.NodeGraph
 
         public virtual bool IsTypeCompatible(in GraphDataType IncomingType)
         { 
-            return IsTypeCompatibleFunc(IncomingType.DataType); 
+            return IsTypeCompatibleFunc(IncomingType.CSType); 
         }
 
         public virtual GraphDataType GetDataType() {
@@ -58,7 +58,7 @@ namespace Gradientspace.NodeGraph
 
         // IExtendedGraphDataTypeInfo implementation
         public virtual bool IsCompatibleWith(in GraphDataType incomingType) {
-            return IsTypeCompatibleFunc(incomingType.DataType);
+            return IsTypeCompatibleFunc(incomingType.CSType);
         }
         public virtual string? GetCustomTypeString() {
             return CustomTypeString;

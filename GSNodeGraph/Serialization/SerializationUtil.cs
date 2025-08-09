@@ -42,7 +42,7 @@ namespace Gradientspace.NodeGraph
 				return false;
 
 			GraphDataType inputDataType = input.GetDataType();
-			Type inputType = inputDataType.DataType;
+			Type inputType = inputDataType.CSType;
 
 			constant.InputName = inputInfo.InputName;
 			constant.DataType = inputType.FullName ?? inputType.Name;
@@ -85,7 +85,7 @@ namespace Gradientspace.NodeGraph
 					if ( RestoreInputConstant(Node, allInputs[inputIndex], inputConstant) ) 
 					{
 						// perhaps the input or node could help us here...
-						bool bPossibleTypeChanges = (allInputs[inputIndex].DataType.DataType == typeof(Type));
+						bool bPossibleTypeChanges = (allInputs[inputIndex].DataType.CSType == typeof(Type));
 						if (bPossibleTypeChanges)
 							allInputs = new(Node.EnumerateInputs());
 					}
@@ -100,7 +100,7 @@ namespace Gradientspace.NodeGraph
 		{
 			INodeInput input = InputInfo.Input;
 			GraphDataType dataType = input.GetDataType();
-			Type inputType = dataType.DataType;
+			Type inputType = dataType.CSType;
 
 			string useTypeName = inputType.FullName ?? inputType.Name;
 			(object? constantValue, bool bIsDefined) = input.GetConstantValue();

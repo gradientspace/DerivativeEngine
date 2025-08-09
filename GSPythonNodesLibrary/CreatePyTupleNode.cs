@@ -92,7 +92,7 @@ namespace Gradientspace.NodeGraph.PythonNodes
 						if (dataType.DataFormat == EGraphDataFormat.Python && dataType.ExtendedType != null)
 							nestedTypes[i] = (PythonType)(dataType.ExtendedType);
 						else
-							nestedTypes[i] = PythonTypeUtil.CSharpTypeToPythonType(dataType.DataType);
+							nestedTypes[i] = PythonTypeUtil.CSharpTypeToPythonType(dataType.CSType);
 					}
 				}
 			}

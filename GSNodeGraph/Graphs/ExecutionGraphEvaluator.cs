@@ -372,7 +372,7 @@ namespace Gradientspace.NodeGraph
             foreach (NodeBase.NodeOutputInfo outputInfo in NextNode.Outputs)
             {
                 RequiredOutputs.Add(outputInfo.Name);
-                RequiredOutputTypes.Add( outputInfo.Output.GetDataType().DataType );
+                RequiredOutputTypes.Add( outputInfo.Output.GetDataType().CSType );
             }
 
             // add special outputs that Iteration nodes must have to support 
@@ -450,7 +450,7 @@ namespace Gradientspace.NodeGraph
             foreach (NodeBase.NodeOutputInfo outputInfo in NextNode.Outputs)
             {
                 RequiredOutputs.Add(outputInfo.Name);
-                RequiredOutputTypes.Add( outputInfo.Output.GetDataType().DataType );
+                RequiredOutputTypes.Add( outputInfo.Output.GetDataType().CSType );
             }
 
             // add control flow output
@@ -505,7 +505,7 @@ namespace Gradientspace.NodeGraph
             List<Type> RequiredOutputTypes = new List<Type>();
             foreach (NodeBase.NodeOutputInfo outputInfo in NextNode.Outputs) {
                 RequiredOutputs.Add(outputInfo.Name);
-                RequiredOutputTypes.Add( outputInfo.Output.GetDataType().DataType );
+                RequiredOutputTypes.Add( outputInfo.Output.GetDataType().CSType );
             }
 
             // figure out which inputs are required to compute those outputs
@@ -555,7 +555,7 @@ namespace Gradientspace.NodeGraph
             List<Type> RequiredOutputTypes = new List<Type>();
             foreach (NodeBase.NodeOutputInfo outputInfo in CallNode.Outputs) {
                 RequiredOutputs.Add(outputInfo.Name);
-                RequiredOutputTypes.Add(outputInfo.Output.GetDataType().DataType);
+                RequiredOutputTypes.Add(outputInfo.Output.GetDataType().CSType);
             }
 
             // figure out which inputs are required to compute those outputs
@@ -643,7 +643,7 @@ namespace Gradientspace.NodeGraph
             List<Type> RequiredOutputTypes = new List<Type>();
             foreach (NodeBase.NodeOutputInfo outputInfo in ReturnNode.Outputs) {
                 RequiredOutputs.Add(outputInfo.Name);
-                RequiredOutputTypes.Add(outputInfo.Output.GetDataType().DataType);
+                RequiredOutputTypes.Add(outputInfo.Output.GetDataType().CSType);
             }
 
             // figure out which inputs are required to compute those outputs
@@ -720,7 +720,7 @@ namespace Gradientspace.NodeGraph
 		                // we might need to convert the cached data to another type   (should that also be cached?? this could be expensive...)
 		                try
 		                {
-			                if (InputData.GetType() != inputDataType.DataType)
+			                if (InputData.GetType() != inputDataType.CSType)
 				                InputData = ApplyTypeConversionToInputType(InputData, outputDataType, inputDataType);
 		                } catch (Exception e)
 		                {
@@ -746,7 +746,7 @@ namespace Gradientspace.NodeGraph
 					// we might need to convert the computed data to another type
 					try
 					{
-						if (InputData.GetType() != inputDataType.DataType)
+						if (InputData.GetType() != inputDataType.CSType)
                            InputData = ApplyTypeConversionToInputType(InputData, outputDataType, inputDataType);
 					} catch (Exception e) {
 						throw new EvaluationAbortedException($"type conversion from output [{FoundConnection.FromOutput}:{TypeUtils.TypeToString(outputDataType)}] to input [{FoundConnection.ToInput}:{TypeUtils.TypeToString(inputDataType)}] failed - {e.Message}") { FailedNode = Node };
@@ -766,9 +766,9 @@ namespace Gradientspace.NodeGraph
 
             // trivial cases - no conversion necessary, or direct C# assignment between types is possible
             Type incomingType = incomingData.GetType();
-            if (incomingType == requiredInputType.DataType) 
+            if (incomingType == requiredInputType.CSType) 
                 return incomingData;
-            if (incomingType.IsAssignableTo(requiredInputType.DataType)) 
+            if (incomingType.IsAssignableTo(requiredInputType.CSType)) 
                 return incomingData;
 
             // try registered global conversions
@@ -781,7 +781,7 @@ namespace Gradientspace.NodeGraph
             // try standard IConvertible interface - this only converts to POD types so we possibly
             // could avoid this test if the required type is an object/etc...
 			if (incomingData is IConvertible) {
-                object? converted = Convert.ChangeType(incomingData, requiredInputType.DataType);
+                object? converted = Convert.ChangeType(incomingData, requiredInputType.CSType);
                 if (converted != null)
                     incomingData = converted;
             }
@@ -845,7 +845,7 @@ namespace Gradientspace.NodeGraph
             // for now this Count is always either 0 or 1...
             NamedDataMap OutputDatas = new NamedDataMap(Outputs.Count);
             for (int i = 0; i < Outputs.Count; ++i)
-                OutputDatas.SetItem(i, Outputs[i], OutputDataType.DataType, null);
+                OutputDatas.SetItem(i, Outputs[i], OutputDataType.CSType, null);
 
             // run the node evaluation and store the outputs in the cache
             RunNodeEvaluation(FoundNode, ref InputDatas, OutputDatas);

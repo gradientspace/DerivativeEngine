@@ -61,7 +61,7 @@ namespace Gradientspace.NodeGraph
             ReplacementNodeType = typeof(ForEachEnumerableNode);
             ReplacementInputName = ForEachEnumerableNode.EnumerableInputName;
             ReplacementNodeInitializer = (INode newNode, GraphDataType incomingType) => {
-                (newNode as ForEachEnumerableNode)?.Initialize(incomingType.DataType);
+                (newNode as ForEachEnumerableNode)?.Initialize(incomingType.CSType);
             };
         }
     }

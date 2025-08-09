@@ -470,7 +470,7 @@ namespace Gradientspace.NodeGraph
                     if (FoundInput != null)
                     {
                         GraphDataType InputDataType = FoundInput.GetDataType();
-                        Type inputType = InputDataType.DataType;
+                        Type inputType = InputDataType.CSType;
                         Type NewValueType = NewValue.GetType();
                         if ( NewValueType == inputType ) 
                         {

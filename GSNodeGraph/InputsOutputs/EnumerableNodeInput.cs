@@ -31,8 +31,8 @@ namespace Gradientspace.NodeGraph
 
         public virtual bool IsTypeCompatible(in GraphDataType IncomingType)
         {
-            bool bIsEnumerable = (TypeUtils.IsEnumerable(IncomingType.DataType));
-            Type? ElementType = TypeUtils.GetEnumerableElementType(IncomingType.DataType);
+            bool bIsEnumerable = (TypeUtils.IsEnumerable(IncomingType.CSType));
+            Type? ElementType = TypeUtils.GetEnumerableElementType(IncomingType.CSType);
 
             // TODO this should use smarter type resolution, eg be able to cast/etc
             return bIsEnumerable && ElementType == this.ElementType;

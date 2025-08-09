@@ -156,7 +156,7 @@ namespace Gradientspace.NodeGraph
             ReplacementNodeType = typeof(GetArrayElementNode);
             ReplacementInputName = GetArrayElementNode.ArrayInputOutputName;
             ReplacementNodeInitializer = (INode newNode, GraphDataType incomingType) => {
-                (newNode as GetArrayElementNode)?.Initialize(incomingType.DataType);
+                (newNode as GetArrayElementNode)?.Initialize(incomingType.CSType);
             };
         }
     }
@@ -192,7 +192,7 @@ namespace Gradientspace.NodeGraph
             ReplacementNodeType = typeof(SetArrayElementNode);
             ReplacementInputName = SetArrayElementNode.ArrayInputOutputName;
             ReplacementNodeInitializer = (INode newNode, GraphDataType incomingType) => {
-                (newNode as SetArrayElementNode)?.Initialize(incomingType.DataType);
+                (newNode as SetArrayElementNode)?.Initialize(incomingType.CSType);
             };
         }
     }
@@ -231,7 +231,7 @@ namespace Gradientspace.NodeGraph
             ReplacementNodeType = typeof(GetArrayLengthNode);
             ReplacementInputName = GetArrayLengthNode.ArrayInputOutputName;
             ReplacementNodeInitializer = (INode newNode, GraphDataType incomingType) => {
-                (newNode as GetArrayLengthNode)?.Initialize(incomingType.DataType);
+                (newNode as GetArrayLengthNode)?.Initialize(incomingType.CSType);
             };
         }
     }

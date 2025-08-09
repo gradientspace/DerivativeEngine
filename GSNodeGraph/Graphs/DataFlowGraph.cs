@@ -45,7 +45,7 @@ namespace Gradientspace.NodeGraph
             // for now this Count is always either 0 or 1...
             NamedDataMap OutputDatas = new NamedDataMap(Outputs.Count);
             for ( int i = 0; i < Outputs.Count; ++i )
-                OutputDatas.SetItem(i, Outputs[i], OutputDataType.DataType, null);
+                OutputDatas.SetItem(i, Outputs[i], OutputDataType.CSType, null);
 
             FoundNode.Evaluate(ref InputDatas, OutputDatas);
 

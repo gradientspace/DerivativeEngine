@@ -62,7 +62,7 @@ namespace Gradientspace.NodeGraph
             ReplacementNodeType = typeof(SetFieldNode);
             ReplacementInputName = SetFieldNode.ObjectInputOutputName;
             ReplacementNodeInitializer = (INode newNode, GraphDataType incomingType) => {
-                (newNode as SetFieldNode)?.Initialize(incomingType.DataType);
+                (newNode as SetFieldNode)?.Initialize(incomingType.CSType);
             };
         }
     }
@@ -81,7 +81,7 @@ namespace Gradientspace.NodeGraph
             ReplacementNodeType = typeof(GetFieldNode);
             ReplacementInputName = GetFieldNode.ObjectInputOutputName;
             ReplacementNodeInitializer = (INode newNode, GraphDataType incomingType) => {
-                (newNode as GetFieldNode)?.Initialize(incomingType.DataType);
+                (newNode as GetFieldNode)?.Initialize(incomingType.CSType);
             };
         }
     }

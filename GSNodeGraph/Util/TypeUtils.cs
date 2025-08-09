@@ -97,7 +97,7 @@ namespace Gradientspace.NodeGraph
             }
 
             // fall back to standard C# restrictions
-            return TypeUtils.CanConnectFromTo(FromType.DataType, ToType.DataType);
+            return TypeUtils.CanConnectFromTo(FromType.CSType, ToType.CSType);
         }
 
 
@@ -189,8 +189,8 @@ namespace Gradientspace.NodeGraph
         public static string TypeToString(GraphDataType graphType)
         {
             if (graphType.ExtendedTypeInfo != null)
-                return graphType.ExtendedTypeInfo.GetCustomTypeString() ?? TypeToString(graphType.DataType);
-            return TypeToString(graphType.DataType);
+                return graphType.ExtendedTypeInfo.GetCustomTypeString() ?? TypeToString(graphType.CSType);
+            return TypeToString(graphType.CSType);
 		}
 
 
