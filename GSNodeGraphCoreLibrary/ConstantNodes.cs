@@ -12,6 +12,8 @@ namespace Gradientspace.NodeGraph.Nodes
     {
         public GenericPODConstantNode()
         {
+            this.Flags = ENodeFlags.IsPure;
+
             AddOutput(ValueOutputName, new StandardNodeOutput<T>());
 
 			StandardNodeInputBase input = new StandardNodeInputWithConstant<T>(new T());
@@ -101,6 +103,7 @@ namespace Gradientspace.NodeGraph.Nodes
 
         public StringConstantNode()
         {
+            this.Flags = ENodeFlags.IsPure;
             AddOutput(ValueOutputName, new StandardNodeOutput<string>());
 			StandardStringNodeInput input = new StandardStringNodeInput();
             input.Flags = ENodeInputFlags.IsNodeConstant | ENodeInputFlags.HiddenLabel;

@@ -302,7 +302,7 @@ namespace Gradientspace.NodeGraph
 			{
 				if (methodInfo.IsStatic == false) continue;
 
-				Attribute? isNodeFunction = methodInfo.GetCustomAttribute(typeof(NodeFunction));
+                NodeFunction? isNodeFunction = methodInfo.GetCustomAttribute(typeof(NodeFunction)) as NodeFunction;
 				if (isNodeFunction == null) continue;
 
 				string NodeName = methodInfo.GetCustomAttribute<NodeFunctionUIName>()?.UIName ?? methodInfo.Name;
@@ -319,12 +319,16 @@ namespace Gradientspace.NodeGraph
 					//}
 					//else
 					{
-						nodeArchetype = new LibraryFunctionNode(type, methodInfo, NodeName);
+                        LibraryFunctionNode funcNode = new LibraryFunctionNode(type, methodInfo, NodeName);
+                        if (isNodeFunction.IsPure)
+                            funcNode.Flags = funcNode.Flags | ENodeFlags.IsPure;
+                        nodeArchetype = funcNode;
 					}
 					NodeType nodeType = new NodeType(functionNodeClassType, NodeName);
 					nodeType.NodeArchetype = nodeArchetype;
 					nodeType.UICategory = Namespace;
 					nodeType.Variant = Namespace + "." + methodInfo.Name;
+                    nodeType.Flags = nodeArchetype.GetNodeFlags();
 					NodeTypeInfo nodeTypeInfo = new NodeTypeInfo(nodeType);
 
 					// temporary code to correct an early error where LibraryFunctionNode was in the wrong namespace :(

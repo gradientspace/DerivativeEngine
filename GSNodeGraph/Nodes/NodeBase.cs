@@ -22,6 +22,8 @@ namespace Gradientspace.NodeGraph
         {
             return GetDefaultNodeName();
         }
+        public ENodeFlags Flags { get; set; }
+        public ENodeFlags GetNodeFlags() { return Flags; }
 
         public struct NodeInputInfo
         {

@@ -27,6 +27,8 @@ namespace Gradientspace.NodeGraph.Nodes
     {
         public BinaryTestNode()
         {
+            this.Flags = ENodeFlags.IsPure;
+
             AddInput(FirstInputName, new StandardNodeInputWithConstant<T>());
             AddInput(SecondInputName, new StandardNodeInputWithConstant<T>());
 

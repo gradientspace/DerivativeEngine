@@ -172,7 +172,10 @@ namespace Gradientspace.NodeGraph
             Debug.Assert(LibraryClass != null && Function != null);
 
             // TODO this is dumb, we should share Arguments construction between copies...
-            return new LibraryFunctionNode(LibraryClass!, Function!, NodeName);
+            LibraryFunctionNode newNode = new LibraryFunctionNode(LibraryClass!, Function!, NodeName);
+            newNode.Flags = this.Flags;
+
+            return newNode;
         }
 
 		public override string ToString()
