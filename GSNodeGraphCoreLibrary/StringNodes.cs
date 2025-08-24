@@ -1,21 +1,41 @@
 // Copyright Gradientspace Corp. All Rights Reserved.
 using Gradientspace.NodeGraph;
+using System.Diagnostics;
+using System.Globalization;
 
 namespace Gradientspace.NodeGraph
 {
-    //
+    // https://learn.microsoft.com/en-us/dotnet/api/system.string?view=net-9.0
     // Todo:
     //    Format node (multiple args)
-    //    IndexOf, LastIndexOf
-    //    Insert, Remove  (index-based)
-    //    Insert (string based - after, before variants)
     //    multi-Append (node)
     //    Split
     //    IConvertible conversions (ToX), Parse, TryParse
 
     [NodeFunctionLibrary("Gradientspace.String")]
-    public static class GradientspaceStringFunctionLibrary
+    public static class GSStringFunctions
     {
+        public enum ECultureMode { Ordinal = 0, Current = 1, Invariant = 2 };
+        public static ECultureMode string_funcs_culture_mode = ECultureMode.Invariant;
+
+        [NodeFunction]
+        public static void ConfigureStringMode(ECultureMode CultureMode = ECultureMode.Invariant)
+        {
+            string_funcs_culture_mode = CultureMode;
+        }
+
+        public static StringComparison get_string_comparison_mode(bool IgnoreCase)
+        {
+            switch (string_funcs_culture_mode) {
+                case ECultureMode.Ordinal: return (IgnoreCase) ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+                case ECultureMode.Current: return (IgnoreCase) ? StringComparison.CurrentCultureIgnoreCase : StringComparison.CurrentCulture;
+                default:
+                case ECultureMode.Invariant: return (IgnoreCase) ? StringComparison.InvariantCultureIgnoreCase : StringComparison.InvariantCulture;
+            }
+        }
+
+
+
         [NodeFunction(IsPure = true)]
         public static string Append(string A, string B) {
             return A + B;
@@ -28,10 +48,39 @@ namespace Gradientspace.NodeGraph
         }
 
         [NodeFunction(IsPure = true)]
-        public static String Replace(string String, string ToReplace, string ReplaceWith, bool bIgnoreCase = true)
+        public static String Replace(string String, string ToReplace, string ReplaceWith, bool IgnoreCase = true)
         {
-            StringComparison useComparison = (bIgnoreCase) ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-            return String.Replace(ToReplace, ReplaceWith, useComparison);
+            return String.Replace(ToReplace, ReplaceWith, get_string_comparison_mode(IgnoreCase));
+        }
+
+
+        [NodeFunction(IsPure = true)]
+        public static string InsertAt(string String, int AtIndex, string Insert)
+        {
+            return String.Insert(AtIndex, Insert);
+        }
+
+        [NodeFunction(IsPure = true)]
+        public static string RemoveRange(string String, int StartIndex, int Count = -1)
+        {
+            if (Count <= 0)
+                return String.Remove(StartIndex);
+            else
+                return String.Remove(StartIndex, Count);
+        }
+
+        [NodeFunction(IsPure = true)]
+        public static string InsertRelative(string String, string Find, string Insert, out bool WasFound, bool InsertBefore = true, bool IgnoreCase = true)
+        {
+            WasFound = false;
+            int FoundIndex = String.IndexOf(Find, get_string_comparison_mode(true));
+            if (FoundIndex <= 0)
+                return String;
+            WasFound = true;
+            if (InsertBefore)
+                return String.Insert(FoundIndex, Insert);
+            else
+                return String.Insert(FoundIndex+Find.Length, Insert);
         }
 
         [NodeFunction(IsPure = true)]
@@ -68,13 +117,22 @@ namespace Gradientspace.NodeGraph
         public static int Length(string String) {
             return String.Length;
         }
+
+
         [NodeFunction(IsPure = true)]
         public static String ToLower(string String) {
-            return String.ToLower();
+            if (string_funcs_culture_mode == ECultureMode.Invariant)
+                return String.ToLowerInvariant();
+            else
+                return String.ToLower();
         }
+
         [NodeFunction(IsPure = true)]
         public static String ToUpper(string String) {
-            return String.ToUpper();
+            if (string_funcs_culture_mode == ECultureMode.Invariant)
+                return String.ToUpperInvariant();
+            else
+                return String.ToUpper();
         }
 
 
@@ -87,33 +145,40 @@ namespace Gradientspace.NodeGraph
         }
 
         [NodeFunction(IsPure = true)]
-        public static bool Contains(string String, string Contains, bool bIgnoreCase = true)
+        public static bool Contains(string String, string Contains, bool IgnoreCase = true)
         {
-            StringComparison useComparison = (bIgnoreCase) ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-            return String.Contains(Contains, useComparison);
+            return String.Contains(Contains, get_string_comparison_mode(IgnoreCase));
         }
 
         [NodeFunction(IsPure = true)]
-        public static bool StartsWith(string String, string StartsWith, bool bIgnoreCase = true)
+        public static bool StartsWith(string String, string StartsWith, bool IgnoreCase = true)
         {
-            StringComparison useComparison = (bIgnoreCase) ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-            return String.StartsWith(StartsWith, useComparison);
+            return String.StartsWith(StartsWith, get_string_comparison_mode(IgnoreCase));
         }
 
         [NodeFunction(IsPure = true)]
-        public static bool EndsWith(string String, string EndsWith, bool bIgnoreCase = true)
+        public static bool EndsWith(string String, string EndsWith, bool IgnoreCase = true)
         {
-            StringComparison useComparison = (bIgnoreCase) ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-            return String.EndsWith(EndsWith, useComparison);
+            return String.EndsWith(EndsWith, get_string_comparison_mode(IgnoreCase));
         }
 
         [NodeFunction(IsPure = true)]
-        public static bool IsSameString(string A, string B, bool bIgnoreCase = true)
+        public static bool IsSameString(string A, string B, bool IgnoreCase = true)
         {
-            StringComparison useComparison = (bIgnoreCase) ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
-            return string.Compare(A, B, useComparison) == 0;
+            return string.Compare(A, B, get_string_comparison_mode(IgnoreCase)) == 0;
         }
 
+        [NodeFunction(IsPure = true)]
+        public static int IndexOf(string String, string Find, bool IgnoreCase = true)
+        {
+            return String.IndexOf(Find, get_string_comparison_mode(IgnoreCase));
+        }
+
+        [NodeFunction(IsPure = true)]
+        public static int LastIndexOf(string String, string Find, bool IgnoreCase = true)
+        {
+            return String.LastIndexOf(Find, get_string_comparison_mode(IgnoreCase));
+        }
 
     }
 
