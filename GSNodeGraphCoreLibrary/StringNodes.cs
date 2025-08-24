@@ -11,8 +11,9 @@ namespace Gradientspace.NodeGraph
     //    multi-Append (node)
     //    Split
     //    IConvertible conversions (ToX), Parse, TryParse
+    //    SubstringRelative
 
-    [NodeFunctionLibrary("Gradientspace.String")]
+    [NodeFunctionLibrary("Core.String")]
     public static class GSStringFunctions
     {
         public enum ECultureMode { Ordinal = 0, Current = 1, Invariant = 2 };

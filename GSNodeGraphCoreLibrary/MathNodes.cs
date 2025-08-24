@@ -48,7 +48,7 @@ namespace Gradientspace.NodeGraph.Nodes
         }
     }
 
-    [GraphNodeNamespace("Gradientspace.Math")]
+    [GraphNodeNamespace("Core.Math")]
     [GraphNodeUIName("Add Float")]
     public class FloatAddNode : StandardBinaryFloatOpNode
     {
@@ -58,7 +58,7 @@ namespace Gradientspace.NodeGraph.Nodes
         public override float ComputeResult(float A, float B) { return A + B; }
     }
 
-    [GraphNodeNamespace("Gradientspace.Math")]
+    [GraphNodeNamespace("Core.Math")]
     [GraphNodeUIName("Multiply Float")]
     public class FloatMultiplyNode : StandardBinaryFloatOpNode
     {
@@ -69,7 +69,7 @@ namespace Gradientspace.NodeGraph.Nodes
     }
 
 
-    [NodeFunctionLibrary("Gradientspace.Math")]
+    [NodeFunctionLibrary("Core.Math")]
     public static class StandardMathFunctionLibrary
     {
 
@@ -96,7 +96,7 @@ namespace Gradientspace.NodeGraph.Nodes
 
 
 
-    [GraphNodeNamespace("Gradientspace.Math")]
+    [GraphNodeNamespace("Core.Math")]
     [GraphNodeUIName("Add N Floats")]
     public class MultiFloatAddNode : StandardNode, INode_VariableInputs
     {

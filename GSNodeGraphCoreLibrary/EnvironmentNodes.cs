@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Gradientspace.NodeGraph.Nodes
 {
-	[NodeFunctionLibrary("Gradientspace.Environment")]
+	[NodeFunctionLibrary("Core.Environment")]
 	public static class GSEnvironmentFunctions
 	{
 		//! run environments that support arguments (eg command-line, etc) should set them

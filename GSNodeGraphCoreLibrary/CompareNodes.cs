@@ -37,7 +37,7 @@ namespace Gradientspace.NodeGraph.Nodes
 
         public override string? GetNodeNamespace()
         {
-            return "Gradientspace.Comparison";
+            return "Core.Comparison";
         }
 
 

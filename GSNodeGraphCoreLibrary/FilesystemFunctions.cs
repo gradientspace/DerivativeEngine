@@ -3,7 +3,7 @@ using Gradientspace.NodeGraph;
 
 namespace Gradientspace.NodeGraph
 {
-    [NodeFunctionLibrary("Gradientspace.Filesystem")]
+    [NodeFunctionLibrary("Core.Filesystem")]
     public static class GSFilesystemFunctions
     {
         // https://learn.microsoft.com/en-us/dotnet/api/system.io.directory?view=net-9.0

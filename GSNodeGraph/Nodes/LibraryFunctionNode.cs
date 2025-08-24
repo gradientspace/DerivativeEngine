@@ -1,13 +1,7 @@
 // Copyright Gradientspace Corp. All Rights Reserved.
-using Gradientspace.NodeGraph;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Reflection;
-using System.Security.AccessControl;
-using System.Text;
-using System.Threading.Tasks;
+
 
 namespace Gradientspace.NodeGraph
 {
@@ -113,6 +107,11 @@ namespace Gradientspace.NodeGraph
 		{
 			return $"{LibraryClass!.Name}.{Function!.Name}";
 		}
+
+        public override string? GetNodeNamespace()
+        {
+            return LibraryNodeType?.UICategory ?? base.GetNodeNamespace();
+        }
 
 
         // ICodeGen interface

@@ -295,7 +295,7 @@ namespace Gradientspace.NodeGraph
 
         protected virtual int AddFunctionLibraryToLibrary(Type type, string Namespace)
         {
-			List<string>? AdditionalLibraryNames = CollectMappedLibraryNames(type);
+			List<string>? AdditionalLibraryNames = CollectMappedLibraryNames(type, Namespace);
 
             int FunctionCount = 0;
 			foreach (MethodInfo methodInfo in type.GetMethods())
@@ -389,11 +389,17 @@ namespace Gradientspace.NodeGraph
                 list.Add(baseString + suffix);
         }
 
-        protected static List<string>? CollectMappedLibraryNames(Type type)
+        protected static List<string>? CollectMappedLibraryNames(Type type, string Namespace)
         {
             List<string>? result = null;
             foreach (MappedFunctionLibraryName mappedName in type.GetCustomAttributes<MappedFunctionLibraryName>())
                 append_to_list(ref result, mappedName.MappedName);
+
+            // hardcoded handling of major Gradientspace. -> Core. library renaming
+            // (can probably be removed after release...)
+            if (Namespace.StartsWith("Core."))
+                append_to_list(ref result, Namespace.Replace("Core.", "Gradientspace."));
+
             return result;
         }
 

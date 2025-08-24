@@ -3,7 +3,7 @@ using System;
 
 namespace GSNodeGraphCoreLibrary
 {
-    [NodeFunctionLibrary("Gradientspace.Conversion")]
+    [NodeFunctionLibrary("Core.Conversion")]
     public static class GSConversionFunctions
     {
         [NodeFunction(IsPure=true)]

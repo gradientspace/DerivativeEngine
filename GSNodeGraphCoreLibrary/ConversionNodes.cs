@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Gradientspace.NodeGraph.Nodes
 {
-    [GraphNodeNamespace("Gradientspace.String")]
+    [GraphNodeNamespace("Core.String")]
     [GraphNodeUIName("To String")]
     public class ToStringNode : StandardNode, ICodeGen
     {
