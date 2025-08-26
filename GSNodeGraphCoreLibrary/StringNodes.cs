@@ -146,9 +146,9 @@ namespace Gradientspace.NodeGraph
         }
 
         [NodeFunction(IsPure = true)]
-        public static bool Contains(string String, string Contains, bool IgnoreCase = true)
+        public static bool Contains(string StringIn, string Contains, bool IgnoreCase = true)
         {
-            return String.Contains(Contains, get_string_comparison_mode(IgnoreCase));
+            return StringIn.Contains(Contains, get_string_comparison_mode(IgnoreCase));
         }
 
         [NodeFunction(IsPure = true)]

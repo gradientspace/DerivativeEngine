@@ -174,6 +174,40 @@ namespace Gradientspace.NodeGraph
         }
 
 
+        // if AddConnection() fails because one of the nodes is missing the required input/output,
+        // call this to try to dynamically spawn 'error' inputs/outputs, which then allows
+        // for a valid (bad) connection to be added
+        public virtual bool TryAddErrorConnection(
+            NodeHandle FromNode, string FromOutput,
+            NodeHandle ToNode, string ToInput)
+        {
+            bool bFoundFrom = GetOutputTypeForNode(FromNode, FromOutput, out GraphDataType FromDataType);
+            bool bFoundTo = GetInputTypeForNode(ToNode, ToInput, out GraphDataType ToDataType);
+            Debug.Assert(bFoundFrom == false || bFoundTo == false);
+
+            if ( bFoundFrom == false ) {
+                NodeBase? Found = FindNodeFromHandle(FromNode);
+                if ( Found is MissingNodeErrorNode node ) 
+                    node.AddOutput(FromOutput, new MissingNodeOutput());
+            }
+            if (bFoundTo == false) {
+                NodeBase? Found = FindNodeFromHandle(ToNode);
+                if ( Found is MissingNodeErrorNode node )
+                    node.AddInput(ToInput, new MissingNodeInput());
+            }
+
+            Connection NewConnection = new();
+            NewConnection.FromNode = FromNode; NewConnection.FromOutput = FromOutput;
+            NewConnection.ToNode = ToNode; NewConnection.ToInput = ToInput;
+            if (Connections.Exists(x => x == NewConnection))
+                return false;
+
+            Connections.Add(NewConnection);
+            return true;
+
+        }
+
+
 
         public virtual bool RemoveConnection(Connection connection)
         {

@@ -196,8 +196,19 @@ namespace Gradientspace.NodeGraph
             foreach (GraphNode node in Serialized.Nodes)
             {
                 NodeType? FoundNodeType = DefaultNodeLibrary.Instance.FindNodeType(node.NodeClassType, node.NodeClassVariant);
-                if (FoundNodeType == null)
-                {
+
+                // if node type could not be found, graph is broken. We will swap in a 
+                // MissingNodeErrorNode type node, which still won't work, but allows the node
+                // to remain in the graph, so it can be handled at the UI level
+                bool bNodeTypeMissing = false;
+                if (FoundNodeType == null) {
+                    FoundNodeType = DefaultNodeLibrary.Instance.FindNodeType(typeof(MissingNodeErrorNode));
+                    bNodeTypeMissing = true;
+                    bNodeErrors = true;
+                }
+
+                // if we still have no node type, abort this node
+                if (FoundNodeType == null) {
                     nodeIdentifierMap.Add(node.Identifier, -1);
                     bNodeErrors = true;
                     continue;
@@ -229,6 +240,14 @@ namespace Gradientspace.NodeGraph
                 }
                 NodeBase? FoundNode = appendToGraph.FindNodeFromHandle(newNodeHandle);
                 Debug.Assert(FoundNode != null);
+
+                // configure the MissingNodeErrorNode if we swapped to it due to missing node type
+                if ( bNodeTypeMissing) {
+                    MissingNodeErrorNode ErrorNode = (FoundNode as MissingNodeErrorNode)!;
+                    ErrorNode.NodeName = node.NodeName;
+                    ErrorNode.NodeClassType = node.NodeClassType;
+                    ErrorNode.NodeClassVariant = node.NodeClassVariant;
+                }
 
                 nodeIdentifierMap.Add(node.Identifier, newNodeHandle.Identifier);
                 MaxIdentifier = Math.Max(MaxIdentifier, newNodeHandle.Identifier);
@@ -331,8 +350,13 @@ namespace Gradientspace.NodeGraph
                     bool bOK = appendToGraph.AddConnection(
                         new NodeHandle(c.FromNode), c.OutputName,
                         new NodeHandle(c.ToNode), c.InputName, bDoTypeChecking);
-                    if (!bOK)
+                    if (!bOK) 
+                    {
+                        // If connection fails, it's either because nodes or pins are missing.
+                        // In the pins case we can try to add 'error' pins/connections
+                        appendToGraph.TryAddErrorConnection( new NodeHandle(c.FromNode), c.OutputName, new NodeHandle(c.ToNode), c.InputName);
                         bConnectionErrors = true;
+                    }
                 }
 			}
 
