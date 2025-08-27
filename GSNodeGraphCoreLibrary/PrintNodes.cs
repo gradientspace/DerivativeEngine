@@ -12,7 +12,6 @@ namespace Gradientspace.NodeGraph.Nodes
 	public static class GradientspaceIOFunctionLibrary
 	{
 
-		// todo maybe should be a node w/ a dynamic type? so that input can return output type?
 		[NodeFunction]
 		public static object? PrintValue(object? Value, string Format = "{0}")
 		{
@@ -22,5 +21,33 @@ namespace Gradientspace.NodeGraph.Nodes
 		}
 
 	}
+
+
+
+    [GraphNodeNamespace("Core.IO")]
+    [GraphNodeUIName("Print")]
+    public class PrintWithFormatNode : VariableObjectsInputNode
+    {
+        public static string InputName { get { return "Format"; } }
+
+        public override string GetDefaultNodeName() { return "Print"; }
+        protected override string ElementBaseName { get { return "Value"; } }
+
+        protected override void BuildStandardInputsOutputs()
+        {
+            StandardStringNodeInput newInput = new StandardStringNodeInput("{0}");
+            AddInput(InputName, newInput);
+        }
+
+        public override void Evaluate(EvaluationContext EvalContext, ref readonly NamedDataMap DataIn, NamedDataMap RequestedDataOut)
+        {
+            object[] formatValues = ConstructObjectArray(in DataIn);
+            string FormatString = DataIn.FindStringValueOrDefault(InputName, "");
+            string result = String.Format(FormatString, formatValues);
+
+            GlobalGraphOutput.AppendLine(result, EGraphOutputType.User);
+        }
+    }
+
 
 }

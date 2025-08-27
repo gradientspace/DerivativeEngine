@@ -1,21 +1,19 @@
 // Copyright Gradientspace Corp. All Rights Reserved.
 using Gradientspace.NodeGraph;
 using System.Diagnostics;
-using System.Globalization;
 
 namespace Gradientspace.NodeGraph
 {
     // https://learn.microsoft.com/en-us/dotnet/api/system.string?view=net-9.0
     // Todo:
-    //    Format node (multiple args)
-    //    multi-Append (node)
-    //    Split
     //    IConvertible conversions (ToX), Parse, TryParse
     //    SubstringRelative
 
     [NodeFunctionLibrary("Core.String")]
     public static class GSStringFunctions
     {
+        // library-wide configuration of culture mode
+
         public enum ECultureMode { Ordinal = 0, Current = 1, Invariant = 2 };
         public static ECultureMode string_funcs_culture_mode = ECultureMode.Invariant;
 
@@ -34,6 +32,9 @@ namespace Gradientspace.NodeGraph
                 case ECultureMode.Invariant: return (IgnoreCase) ? StringComparison.InvariantCultureIgnoreCase : StringComparison.InvariantCulture;
             }
         }
+
+
+
 
 
 
@@ -146,9 +147,9 @@ namespace Gradientspace.NodeGraph
         }
 
         [NodeFunction(IsPure = true)]
-        public static bool Contains(string StringIn, string Contains, bool IgnoreCase = true)
+        public static bool Contains(string String, string Contains, bool IgnoreCase = true)
         {
-            return StringIn.Contains(Contains, get_string_comparison_mode(IgnoreCase));
+            return String.Contains(Contains, get_string_comparison_mode(IgnoreCase));
         }
 
         [NodeFunction(IsPure = true)]
@@ -181,6 +182,146 @@ namespace Gradientspace.NodeGraph
             return String.LastIndexOf(Find, get_string_comparison_mode(IgnoreCase));
         }
 
+
+        [NodeFunction]
+        [NodeReturnValue(DisplayName ="Strings")]
+        public static List<string> Apply(IEnumerable<string> Strings, Func<string,string> Modifier)
+        {
+            List<string> result = new List<string>();
+            foreach (string str in Strings) {
+                string newString = Modifier(str);
+                result.Add(newString);
+            }
+            return result;
+        }
     }
+
+
+
+
+    [GraphNodeNamespace("Core.String")]
+    [GraphNodeUIName("AppendStrings")]
+    public class AppendStringsNode : VariableStringsInputNode
+    {
+        public static string SeparatorName { get { return "Separator"; } }
+        public static string OutputName { get { return "String"; } }
+
+        public override string GetDefaultNodeName() { return "AppendStrings"; }
+        protected override string ElementBaseName { get { return "String"; } }
+
+        public AppendStringsNode() {
+            Flags |= ENodeFlags.IsPure;
+        }
+
+        protected override void BuildStandardInputsOutputs()
+        {
+            AddInput(SeparatorName, new StandardStringNodeInput());
+            AddOutput(OutputName, new StandardNodeOutput<string>());
+        }
+
+        public override void Evaluate(EvaluationContext EvalContext, ref readonly NamedDataMap DataIn, NamedDataMap RequestedDataOut)
+        {
+            int OutputIndex = RequestedDataOut.IndexOfItem(OutputName);
+            if (OutputIndex == -1)
+                throw new Exception("AppendStringsNode: output not found");
+
+            string[] AppendValues = ConstructStringArray(in DataIn);
+            string Separator = DataIn.FindStringValueOrDefault(SeparatorName, "");
+
+            string result = string.Join(Separator, AppendValues);
+            RequestedDataOut.SetItemValue(OutputIndex, result);
+        }
+    }
+
+
+
+
+
+
+    [GraphNodeNamespace("Core.String")]
+    [GraphNodeUIName("Split")]
+    public class SplitStringNode : VariableStringsInputNode
+    {
+        public static string InputName { get { return "String"; } }
+        public static string TrimSpacesName { get { return "Trim Spaces"; } }
+        public static string RemoveEmptyName { get { return "Remove Empty"; } }
+        public static string ArrayOutputName { get { return "Strings"; } }
+
+        public override string GetDefaultNodeName() { return "Split"; }
+        protected override string ElementBaseName { get { return "Separator"; } }
+
+        public SplitStringNode() {
+            Flags |= ENodeFlags.IsPure;
+        }
+
+        protected override void BuildStandardInputsOutputs()
+        {
+            StandardStringNodeInput newInput = new StandardStringNodeInput();
+            AddInput(InputName, newInput);
+            AddInput(TrimSpacesName, new StandardNodeInputWithConstant<bool>(true) );
+            AddInput(RemoveEmptyName, new StandardNodeInputWithConstant<bool>(true));
+
+            AddOutput(ArrayOutputName, new StandardNodeOutputBase(typeof(string[])));
+        }
+
+        public override void Evaluate(EvaluationContext EvalContext, ref readonly NamedDataMap DataIn, NamedDataMap RequestedDataOut)
+        {
+            int OutputIndex = RequestedDataOut.IndexOfItem(ArrayOutputName);
+            if (OutputIndex == -1)
+                throw new Exception("SplitStringNode: output not found");
+
+            string[] SeparatorValues = ConstructStringArray(in DataIn);
+
+            string ToSplit = DataIn.FindStringValueOrDefault(InputName, "");
+            StringSplitOptions Options = StringSplitOptions.None;
+            if (DataIn.FindStructValueOrDefault<bool>(TrimSpacesName, true))
+                Options = Options | StringSplitOptions.TrimEntries;
+            if (DataIn.FindStructValueOrDefault<bool>(RemoveEmptyName, true))
+                Options = Options | StringSplitOptions.RemoveEmptyEntries;
+
+            string[] result = ToSplit.Split(SeparatorValues, Options);
+
+            RequestedDataOut.SetItemValue(OutputIndex, result);
+        }
+    }
+
+
+
+
+
+    [GraphNodeNamespace("Core.String")]
+    [GraphNodeUIName("Format")]
+    public class FormatStringNode : VariableObjectsInputNode
+    {
+        public static string InputName { get { return "Format"; } }
+        public static string OutputName { get { return "String"; } }
+
+        public override string GetDefaultNodeName() { return "Format"; }
+        protected override string ElementBaseName { get { return "Value"; } }
+
+        public FormatStringNode() {
+            Flags |= ENodeFlags.IsPure;
+        }
+
+        protected override void BuildStandardInputsOutputs()
+        {
+            StandardStringNodeInput newInput = new StandardStringNodeInput();
+            AddInput(InputName, newInput);
+
+            AddOutput(OutputName, new StandardNodeOutput<string>());
+        }
+
+        public override void Evaluate(EvaluationContext EvalContext, ref readonly NamedDataMap DataIn, NamedDataMap RequestedDataOut)
+        {
+            int OutputIndex = RequestedDataOut.IndexOfItem(OutputName);
+            if (OutputIndex == -1)
+                throw new Exception("FormatStringNode: output not found");
+            object[] formatValues = ConstructObjectArray(in DataIn);
+            string FormatString = DataIn.FindStringValueOrDefault(InputName, "");
+            string result = String.Format(FormatString, formatValues);
+            RequestedDataOut.SetItemValue(OutputIndex, result);
+        }
+    }
+
 
 }

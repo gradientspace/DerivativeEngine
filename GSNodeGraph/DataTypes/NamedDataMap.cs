@@ -98,6 +98,23 @@ namespace Gradientspace.NodeGraph
         }
 
 
+        public string FindStringValueOrDefault(string Name, string DefaultValue, bool bThrowExceptionIfMissing = true)
+        {
+            string Result = "";
+            if (FindItemValueStrict<string>(Name, ref Result, bThrowExceptionIfMissing))
+                return Result;
+            return DefaultValue;
+        }
+
+        public T FindStructValueOrDefault<T>(string Name, T DefaultValue, bool bThrowExceptionIfMissing = true) where T : struct
+        {
+            T Result = new();
+            if (FindItemValueStrict<T>(Name, ref Result, bThrowExceptionIfMissing))
+                return Result;
+            return DefaultValue;
+        }
+
+
         public object? FindItemValue(string Name)
         {
             int N = Items.Length;
