@@ -183,8 +183,7 @@ namespace Gradientspace.NodeGraph
         }
 
 
-        [NodeFunction]
-        [NodeReturnValue(DisplayName ="Strings")]
+        [NodeFunction(ReturnName="Strings")]
         public static List<string> Apply(IEnumerable<string> Strings, Func<string,string> Modifier)
         {
             List<string> result = new List<string>();

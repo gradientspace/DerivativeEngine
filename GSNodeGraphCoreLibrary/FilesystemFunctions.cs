@@ -42,25 +42,80 @@ namespace Gradientspace.NodeGraph
         public static bool PathExists(string Path) {
             return System.IO.Path.Exists(Path);
         }
+        [NodeFunction(IsPure = true)]
+        public static bool IsSamePath(string Path1, string Path2)
+        {
+            string a = System.IO.Path.GetFullPath(Path1);
+            string b = System.IO.Path.GetFullPath(Path2);
+            return a.Equals(b, StringComparison.OrdinalIgnoreCase);
+        }
 
+        [NodeFunction(IsPure = true,ReturnName = "Path")]
+        public static string CombinePath(IEnumerable<string> Strings)
+        {
+            return Path.Combine(Strings.ToArray());
+        }
 
+        [NodeFunction(IsPure = true)]
+        public static void GetPathParts(string Path, out string Directory, out string Filename, out string FileBase, out string Extension)
+        {
+            Directory = System.IO.Path.GetDirectoryName(Path) ?? "";
+            Filename = System.IO.Path.GetFileName(Path) ?? "";
+            FileBase = System.IO.Path.GetFileNameWithoutExtension(Path) ?? "";
+            Extension = System.IO.Path.GetExtension(Path) ?? "";
+            if (Extension.StartsWith('.'))
+                Extension = Extension.Remove(0, 1);
+        }
 
+        [NodeFunction(IsPure = true)]
+        public static string DirSeparator(string Path)
+        {
+            return System.IO.Path.DirectorySeparatorChar.ToString();
+        }
 
+        [NodeFunction(IsPure = true, ReturnName = "NewPath")]
+        public static string ChangeExtension(string Path, string NewExtension) {
+            return System.IO.Path.ChangeExtension(Path, NewExtension) ?? Path;
+        }
+
+        [NodeFunction(IsPure = true, ReturnName = "FullPath")]
+        public static string GetFullPath(string Path) {
+            return System.IO.Path.GetFullPath(Path);
+        }
+        [NodeFunction(IsPure = true, ReturnName = "RelativePath")]
+        public static string GetRelativePath(string RelativeTo, string Path) {
+            return System.IO.Path.GetRelativePath(RelativeTo, Path);
+        }
+
+        [NodeFunction(ReturnName = "Filename")]
+        public static string GetRandomFileName() {
+            return System.IO.Path.GetRandomFileName();
+        }
+        [NodeFunction(ReturnName = "Path")]
+        public static string CreateTempFile() {
+            return System.IO.Path.GetTempFileName();
+        }
+        [NodeFunction(IsPure = true, ReturnName = "Path")]
+        public static string GetTempPath() {
+            return System.IO.Path.GetTempPath();
+        }
 
         [NodeFunction]
-        public static string[] ListDirectory(string Path, string Filter = "*", bool IncludeFiles = true, bool IncludeDirs = true)
+        public static string[] ListDirectory(string Path, string Filter = "*", bool IncludeFiles = true, bool IncludeDirs = true, bool Recursive = false)
         {
+            SearchOption searchOption = Recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+
             if (IncludeDirs == false)
-                return Directory.GetFiles(Path, Filter);
+                return Directory.GetFiles(Path, Filter, searchOption);
             else if (IncludeFiles == false)
-                return Directory.GetDirectories(Path, Filter);
-            List<string> all = Directory.GetFiles(Path, Filter).ToList();
-            foreach (string dir in Directory.EnumerateDirectories(Path, Filter))
+                return Directory.GetDirectories(Path, Filter, searchOption);
+            List<string> all = Directory.GetFiles(Path, Filter, searchOption).ToList();
+            foreach (string dir in Directory.EnumerateDirectories(Path, Filter, searchOption))
                 all.Add(dir);
             return all.ToArray();
         }
 
-        [NodeFunction]
+        [NodeFunction(ReturnName = "FilePath")]
         public static string FindFilePath(string Filename, out bool Found, string PathHint = ".", bool SearchBelow = true, bool SearchAbove = false)
         {
             Found = false;
@@ -207,9 +262,57 @@ namespace Gradientspace.NodeGraph
             return filesystem_op(() => { File.WriteAllBytes(Path, Bytes); }, "WriteAllBytes");
         }
 
+    }
 
 
 
+    [GraphNodeNamespace("Core.Filesystem")]
+    [GraphNodeUIName("MakePath")]
+    public class MakePathNode : VariableStringsInputNode
+    {
+        public static string SimplifyName { get { return "Simplify"; } }
+        public static string ToFullName { get { return "Full Path"; } }
+        public static string OutputName { get { return "Path"; } }
+
+        public override string GetDefaultNodeName() { return "MakePath"; }
+        protected override string ElementBaseName { get { return "Path"; } }
+
+        public MakePathNode() {
+            Flags |= ENodeFlags.IsPure;
+        }
+
+        protected override void BuildStandardInputsOutputs() {
+            AddInput(SimplifyName, new StandardNodeInputWithConstant<bool>(false));
+            AddInput(ToFullName, new StandardNodeInputWithConstant<bool>(false));
+            AddOutput(OutputName, new StandardNodeOutput<string>());
+        }
+
+        public override void Evaluate(EvaluationContext EvalContext, ref readonly NamedDataMap DataIn, NamedDataMap RequestedDataOut)
+        {
+            int OutputIndex = RequestedDataOut.IndexOfItem(OutputName);
+            if (OutputIndex == -1)
+                throw new Exception("MakePathNode: output not found");
+
+            string[] AppendValues = ConstructStringArray(in DataIn);
+            string Path = System.IO.Path.Combine(AppendValues);
+
+            if (DataIn.FindStructValueOrDefault<bool>(ToFullName, false, false)) 
+            {
+                Path = System.IO.Path.GetFullPath(Path);
+            } 
+            else if (DataIn.FindStructValueOrDefault<bool>(SimplifyName, false, false)) 
+            {
+                if (System.IO.Path.IsPathRooted(Path)) {
+                    Path = System.IO.Path.GetFullPath(Path);
+                } else {
+                    string tempbase = Directory.GetCurrentDirectory();
+                    Path = System.IO.Path.GetFullPath(Path);
+                    Path = System.IO.Path.GetRelativePath(tempbase, Path);
+                }
+            }
+
+            RequestedDataOut.SetItemValue(OutputIndex, Path);
+        }
     }
 
 }

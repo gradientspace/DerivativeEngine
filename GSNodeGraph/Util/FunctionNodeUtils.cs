@@ -55,11 +55,17 @@ namespace Gradientspace.NodeGraph
                 {
                     returnName = "Result";      // default
 
-                    NodeReturnValue? ReturnValueInfo = Function.GetCustomAttribute<NodeReturnValue>();
-                    if (ReturnValueInfo != null)
-                    {
-                        if (ReturnValueInfo.DisplayName.Length > 0)
-                            returnName = ReturnValueInfo.DisplayName;
+                    NodeFunction? FunctionInfo = Function.GetCustomAttribute<NodeFunction>();
+                    if ( FunctionInfo != null && FunctionInfo.ReturnName != null && FunctionInfo.ReturnName.Length > 0 ) {
+                        returnName = FunctionInfo.ReturnName;
+                    }
+                    else 
+                    { 
+                        NodeReturnValue? ReturnValueInfo = Function.GetCustomAttribute<NodeReturnValue>();
+                        if (ReturnValueInfo != null) {
+                            if (ReturnValueInfo.DisplayName.Length > 0)
+                                returnName = ReturnValueInfo.DisplayName;
+                        }
                     }
                 }
                 ReturnName = returnName;
@@ -153,9 +159,16 @@ namespace Gradientspace.NodeGraph
             for (int j = 0; j < FunctionInfo.OutputArguments.Length; ++j)
             {
                 ref FuncOutputArgInfo outputArg = ref FunctionInfo.OutputArguments[j];
-                if (outputArg.bIsRefOutput == false)
-                    arguments[outputArg.argIndex] = Activator.CreateInstance(outputArg.argType);
-                else
+                if (outputArg.bIsRefOutput == false) 
+                {
+                    // for out args, try to create an instance? Not clear we actually need to do this,
+                    // as the function won't compile unless it defines a value for the out argument...
+                    arguments[outputArg.argIndex] = null;
+                    Func<object>? Constructor = TypeUtils.FindParameterlessConstructorForType(outputArg.argType);
+                    if (Constructor != null)
+                        arguments[outputArg.argIndex] = Constructor();
+
+                } else
                     Debug.Assert(arguments[outputArg.argIndex] != null);
             }
 
