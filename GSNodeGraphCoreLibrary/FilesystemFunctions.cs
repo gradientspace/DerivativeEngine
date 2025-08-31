@@ -11,9 +11,6 @@ namespace Gradientspace.NodeGraph
         // https://learn.microsoft.com/en-us/dotnet/api/system.io.path?view=net-9.0
         // https://learn.microsoft.com/en-us/dotnet/api/system.io.file?view=net-9.0
 
-        //System.IO.Path functions
-
-
         [NodeFunction]
         public static string GetCurrentDirectory() {
             return Directory.GetCurrentDirectory();

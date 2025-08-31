@@ -59,47 +59,47 @@ namespace Gradientspace.NodeGraph.Nodes
 
 
 
-    [GraphNodeNamespace("Gradientspace.Constants")]
-    [GraphNodeUIName("Make Int32")]
+    [GraphNodeNamespace("Core.Constants")]
+    [GraphNodeUIName("int")]
     public class Int32ConstantNode : GenericPODConstantNode<int>
     {
-        public override string GetDefaultNodeName() { return "Make Int32"; }
+        public override string GetDefaultNodeName() { return "int"; }
     }
 
-    [GraphNodeNamespace("Gradientspace.Constants")]
-    [GraphNodeUIName("Make Int64")]
+    [GraphNodeNamespace("Core.Constants")]
+    [GraphNodeUIName("int64")]
     public class Int64ConstantNode : GenericPODConstantNode<long>
     {
-        public override string GetDefaultNodeName() { return "Make Int64"; }
+        public override string GetDefaultNodeName() { return "int64"; }
     }
 
-    [GraphNodeNamespace("Gradientspace.Constants")]
-    [GraphNodeUIName("Make Float")]
+    [GraphNodeNamespace("Core.Constants")]
+    [GraphNodeUIName("float")]
     public class FloatConstantNode : GenericPODConstantNode<float>
     {
-        public override string GetDefaultNodeName() { return "Make Float"; }
+        public override string GetDefaultNodeName() { return "float"; }
     }
 
-    [GraphNodeNamespace("Gradientspace.Constants")]
-    [GraphNodeUIName("Make Double")]
+    [GraphNodeNamespace("Core.Constants")]
+    [GraphNodeUIName("double")]
     public class DoubleConstantNode : GenericPODConstantNode<double>
     {
-        public override string GetDefaultNodeName() { return "Make Double"; }
+        public override string GetDefaultNodeName() { return "double"; }
     }
 
-    [GraphNodeNamespace("Gradientspace.Constants")]
-    [GraphNodeUIName("Make Boolean")]
+    [GraphNodeNamespace("Core.Constants")]
+    [GraphNodeUIName("bool")]
     public class BoolConstantNode : GenericPODConstantNode<bool>
     {
-        public override string GetDefaultNodeName() { return "Make Boolean"; }
+        public override string GetDefaultNodeName() { return "bool"; }
     }
 
 
-    [GraphNodeNamespace("Gradientspace.Constants")]
-    [GraphNodeUIName("Make String")]
+    [GraphNodeNamespace("Core.Constants")]
+    [GraphNodeUIName("string")]
     public class StringConstantNode : StandardNode, ICodeGen
     {
-        public override string GetDefaultNodeName() { return "Make String"; }
+        public override string GetDefaultNodeName() { return "string"; }
 
         public StringConstantNode()
         {

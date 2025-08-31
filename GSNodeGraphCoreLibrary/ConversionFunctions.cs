@@ -13,6 +13,13 @@ namespace GSNodeGraphCoreLibrary
             return (Success) ? result : DefaultValue;
         }
 
+        [NodeFunction(IsPure = true)]
+        public static double TryParseDouble(string String, out bool Success, double DefaultValue = 0)
+        {
+            Success = Double.TryParse(String, out double result);
+            return (Success) ? result : DefaultValue;
+        }
+
     }
 
 }
