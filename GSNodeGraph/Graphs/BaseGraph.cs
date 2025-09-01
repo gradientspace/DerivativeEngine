@@ -84,6 +84,12 @@ namespace Gradientspace.NodeGraph
         }
 
 
+        public virtual T? CreateNewNode<T>() where T : NodeBase, new()
+        {
+            NodeHandle handle = AddNodeOfType<T>();
+            return FindNodeFromHandle(handle) as T;
+        }
+
         public virtual NodeHandle AddNodeOfType<T>() where T : NodeBase, new()
         {
             T NewNode = new T();
@@ -172,6 +178,13 @@ namespace Gradientspace.NodeGraph
             Connections.Add(NewConnection);
             return true;
         }
+        public virtual bool AddConnection(
+            NodeBase FromNode, string FromOutput,
+            NodeBase ToNode, string ToInput,
+            bool bRequireMatchingDataTypes = true)
+        {
+            return AddConnection(FromNode.Handle, FromOutput, ToNode.Handle, ToInput, bRequireMatchingDataTypes);
+        }
 
 
         // if AddConnection() fails because one of the nodes is missing the required input/output,
@@ -229,10 +242,14 @@ namespace Gradientspace.NodeGraph
             NodeBase? toNode = FindNodeFromHandle(ToNode);
             if (fromNode == null || toNode == null)
                 return false;
+            return AddSequenceConnection(fromNode, FromOutput, toNode, ToInput);
 
+        }
+        public virtual bool AddSequenceConnection(NodeBase FromNode, string FromOutput, NodeBase ToNode, string ToInput)
+        {
             Connection NewConnection = new();
-            NewConnection.FromNode = FromNode; NewConnection.FromOutput = FromOutput;
-            NewConnection.ToNode = ToNode; NewConnection.ToInput = ToInput;
+            NewConnection.FromNode = FromNode.Handle; NewConnection.FromOutput = FromOutput;
+            NewConnection.ToNode = ToNode.Handle; NewConnection.ToInput = ToInput;
             if (SequenceConnections.Exists(x => x == NewConnection))
                 return false;
 
@@ -535,6 +552,11 @@ namespace Gradientspace.NodeGraph
                 }
             }
             return false;
+        }
+        public virtual bool SetNodeConstantValue(NodeBase node, string InputName, object NewValue)
+        {
+            // todo this should go the other way round!!
+            return SetNodeConstantValue(node.GraphIdentifier, InputName, NewValue);
         }
 
         public virtual INodeInfo CreateNewNodeOfType(NodeType nodeType, int UseSpecifiedNodeIdentifier = -1)
