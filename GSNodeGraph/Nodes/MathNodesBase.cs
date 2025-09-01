@@ -24,6 +24,8 @@ namespace Gradientspace.NodeGraph.Nodes
 
         public StandardUnaryMathOpNode()
         {
+            Flags = ENodeFlags.IsPure;
+
             AddInput(Operand1Name, new StandardNodeInputWithConstant<T1>());
             AddOutput(ValueOutputName, new StandardNodeOutput<T2>());
         }
@@ -67,9 +69,9 @@ namespace Gradientspace.NodeGraph.Nodes
     public abstract class StandardBinaryMathOpNode<T1, T2, T3> : StandardMathOpNode, ICodeGen 
         where T1 : struct where T2 : struct where T3 : struct
     {
-        public static string Operand1Name { get { return "A"; } }
-        public static string Operand2Name { get { return "B"; } }
-        public static string ValueOutputName { get { return "Value"; } }
+        public virtual string Operand1Name => "A";
+        public virtual string Operand2Name => "B";
+        public static string ValueOutputName => "Value";
 
         public override string? GetNodeNamespace() { return "Core.Math"; }
         public override string GetDefaultNodeName() { return OpString; }
@@ -81,6 +83,8 @@ namespace Gradientspace.NodeGraph.Nodes
 
         public StandardBinaryMathOpNode()
         {
+            Flags = ENodeFlags.IsPure;
+
             AddInput(Operand1Name, new StandardNodeInputWithConstant<T1>());
             AddInput(Operand2Name, new StandardNodeInputWithConstant<T2>());
             AddOutput(ValueOutputName, new StandardNodeOutput<T3>());
