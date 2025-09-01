@@ -48,6 +48,19 @@ namespace Gradientspace.NodeGraph.Nodes
         }
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
     [GraphNodeNamespace("Core.Math")]
     [GraphNodeUIName("Add Float")]
     public class FloatAddNode : StandardBinaryFloatOpNode
