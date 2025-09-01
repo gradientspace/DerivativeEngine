@@ -7,7 +7,7 @@ namespace Gradientspace.NodeGraph.Geometry
 {
     [NodeFunctionLibrary("Geometry3.MeshIO")]
     [MappedFunctionLibraryName("Geometry.MeshIO")]
-    public static class GeometryMeshIOFunctionLibrary
+    public static class G3MeshIOFunctions
     {
 
 

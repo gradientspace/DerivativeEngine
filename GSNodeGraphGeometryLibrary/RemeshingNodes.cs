@@ -5,7 +5,7 @@ using g3;
 namespace Gradientspace.NodeGraph.Geometry
 {
     [NodeFunctionLibrary("Geometry3.Remeshing")]
-    public static class GeometryRemeshingFunctionLibrary
+    public static class G3RemeshingFunctions
     {
         [NodeFunction]
         [NodeReturnValue(DisplayName = "Mesh")]

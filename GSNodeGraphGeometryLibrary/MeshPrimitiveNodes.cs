@@ -6,7 +6,7 @@ namespace Gradientspace.NodeGraph.Geometry3
 {
 
     [NodeFunctionLibrary("Geometry3.Primitives")]
-    public static class Geometry3MeshPrimitivesFunctionLibrary
+    public static class G3MeshPrimitiveFunctions
     {
         [NodeFunction]
         [NodeReturnValue(DisplayName = "Mesh")]

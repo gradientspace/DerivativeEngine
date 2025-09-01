@@ -144,7 +144,7 @@ namespace Gradientspace.NodeGraph
 
 
 
-    [GraphNodeNamespace("Gradientspace.Array")]
+    [GraphNodeNamespace("Core.Array")]
     public class GetArrayElementPlaceholderNode : ArrayAccessPlaceholderNodeBase
     {
         public override string GetDefaultNodeName() { return "Get Element"; }
@@ -180,7 +180,7 @@ namespace Gradientspace.NodeGraph
     }
 
 
-    [GraphNodeNamespace("Gradientspace.Array")]
+    [GraphNodeNamespace("Core.Array")]
     public class SetArrayElementPlaceholderNode : ArrayAccessPlaceholderNodeBase
     {
         public override string GetDefaultNodeName() { return "Set Element"; }
@@ -219,7 +219,7 @@ namespace Gradientspace.NodeGraph
 
 
 
-    [GraphNodeNamespace("Gradientspace.Array")]
+    [GraphNodeNamespace("Core.Array")]
     public class GetArrayLengthPlaceholderNode : ArrayAccessPlaceholderNodeBase
     {
         public override string GetDefaultNodeName() { return "Get Length"; }
@@ -257,7 +257,7 @@ namespace Gradientspace.NodeGraph
 
 
 
-    [GraphNodeNamespace("Gradientspace.Array")]
+    [GraphNodeNamespace("Core.Array")]
 	[GraphNodeUIName("Make Array")]
 	public class MakeArrayFromValuesNode : NodeBase, INode_VariableInputs
 	{

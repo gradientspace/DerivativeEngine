@@ -28,21 +28,22 @@ namespace Gradientspace.NodeGraph.Nodes
     [GraphNodeUIName("Print")]
     public class PrintWithFormatNode : VariableObjectsInputNode
     {
-        public static string InputName { get { return "Format"; } }
+        public static string FormatName { get { return "Format"; } }
 
         public override string GetDefaultNodeName() { return "Print"; }
         protected override string ElementBaseName { get { return "Value"; } }
 
         protected override void BuildStandardInputsOutputs()
         {
-            StandardStringNodeInput newInput = new StandardStringNodeInput("{0}");
-            AddInput(InputName, newInput);
+            StandardStringNodeInput formatInput = new StandardStringNodeInput("{0}");
+            formatInput.Flags |= ENodeInputFlags.IsNodeConstant;
+            AddInput(FormatName, formatInput);
         }
 
         public override void Evaluate(EvaluationContext EvalContext, ref readonly NamedDataMap DataIn, NamedDataMap RequestedDataOut)
         {
             object[] formatValues = ConstructObjectArray(in DataIn);
-            string FormatString = DataIn.FindStringValueOrDefault(InputName, "");
+            string FormatString = DataIn.FindStringValueOrDefault(FormatName, "");
             string result = String.Format(FormatString, formatValues);
 
             GlobalGraphOutput.AppendLine(result, EGraphOutputType.User);

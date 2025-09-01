@@ -29,7 +29,7 @@ namespace Gradientspace.NodeGraph
         protected abstract void BuildStandardInputsOutputs();
 
         protected virtual string ElementBaseName { get { return "Object"; } }
-        protected virtual string MakeObjectInputName(int Index) { return $"{ElementBaseName}{Index}"; }
+        public virtual string MakeObjectInputName(int Index) { return $"{ElementBaseName}{Index}"; }
 
         public bool AddInput()
         {
@@ -121,7 +121,7 @@ namespace Gradientspace.NodeGraph
         protected abstract void BuildStandardInputsOutputs();
 
         protected virtual string ElementBaseName { get { return "Element"; } }
-        protected virtual string MakeStringInputName(int Index) { return $"{ElementBaseName}{Index}"; }
+        public virtual string MakeStringInputName(int Index) { return $"{ElementBaseName}{Index}"; }
 
         public bool AddInput()
         {

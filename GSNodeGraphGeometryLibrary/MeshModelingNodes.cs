@@ -12,7 +12,7 @@ namespace Gradientspace.NodeGraph.Geometry3
     }
 
     [NodeFunctionLibrary("Geometry3.MeshModeling")]
-    public static class Geometry3MeshModelingFunctionLibrary
+    public static class G3MeshModelingFunctions
     {
         [NodeFunction]
         [NodeReturnValue(DisplayName = "Mesh")]

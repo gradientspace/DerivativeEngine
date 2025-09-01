@@ -72,7 +72,7 @@ namespace Gradientspace.NodeGraph
 
 
 
-    [GraphNodeNamespace("Gradientspace.Array")]
+    [GraphNodeNamespace("Core.Array")]
     public class CreateArrayNode : NodeBase
     {
         public override string GetDefaultNodeName() { return "Create Array"; }

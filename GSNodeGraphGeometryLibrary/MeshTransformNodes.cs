@@ -6,7 +6,7 @@ namespace Gradientspace.NodeGraph.Geometry
 {
     [NodeFunctionLibrary("Geometry3.MeshTransforms")]
     [MappedFunctionLibraryName("Geometry.MeshTransforms")]
-    public static class GeometryMeshTransformFunctionLibrary
+    public static class G3MeshTransformFunctions
     {
         [NodeFunction]
         [NodeReturnValue(DisplayName = "Mesh")]

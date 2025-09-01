@@ -3,11 +3,8 @@ using Gradientspace.NodeGraph;
 
 namespace Gradientspace.NodeGraph.Nodes
 {
-    // DivRem
+    //  DivRem
     //  CopySign
-    //  OneOver
-    //  Clamp
-    //  FusedMultiplyAdd
 
 
     public class IntAddNode : StandardBinaryMathOpNode<int, int, int>
@@ -51,6 +48,13 @@ namespace Gradientspace.NodeGraph.Nodes
         public override string OpString => "-A";
         public override int ComputeOp(ref readonly int A) { return -A; }
         protected override string CodeString(string A, string Result) { return $"{Result} = -({A})"; }
+    }
+    public class IntMulAddNode : StandardTrinaryMathOpNode<int, int, int, int>
+    {
+        public override string OpName => "A*B+C";
+        public override string OpString => "A*B+C";
+        public override int ComputeOp(ref readonly int A, ref readonly int B, ref readonly int C) { return A*B+C; }
+        protected override string CodeString(string A, string B, string C, string Result) { return $"{Result} = ({A})*({B})+({C})"; }
     }
     public class IntIncrementNode : StandardUnaryMathOpNode<int, int>
     {
@@ -104,30 +108,39 @@ namespace Gradientspace.NodeGraph.Nodes
     public class IntAbsNode : StandardUnaryMathOpNode<int, int>
     {
         public override string OpName => "Abs";
-        public override string OpString => "Abs(A)";
+        public override string OpString => "Abs";
         public override int ComputeOp(ref readonly int A) { return Math.Abs(A); }
         protected override string CodeString(string A, string Result) { return $"{Result} = Math.Abs({A})"; }
     }
     public class IntSignNode : StandardUnaryMathOpNode<int, int>
     {
         public override string OpName => "Sign";
-        public override string OpString => "Sign(A)";
+        public override string OpString => "Sign";
         public override int ComputeOp(ref readonly int A) { return Math.Sign(A); }
         protected override string CodeString(string A, string Result) { return $"{Result} = Math.Sign({A})"; }
     }
     public class IntMinNode : StandardBinaryMathOpNode<int, int, int>
     {
         public override string OpName => "Min";
-        public override string OpString => "Min(A,B)";
+        public override string OpString => "Min";
         public override int ComputeOp(ref readonly int A, ref readonly int B) { return Math.Min(A, B); }
         protected override string CodeString(string A, string B, string Result) { return $"{Result} = Math.Min({A},{B})"; }
     }
     public class IntMaxNode : StandardBinaryMathOpNode<int, int, int>
     {
         public override string OpName => "Max";
-        public override string OpString => "Max(A,B)";
+        public override string OpString => "Max";
         public override int ComputeOp(ref readonly int A, ref readonly int B) { return Math.Max(A, B); }
         protected override string CodeString(string A, string B, string Result) { return $"{Result} = Math.Max({A},{B})"; }
+    }
+    public class IntClampNode : StandardTrinaryMathOpNode<int, int, int, int>
+    {
+        public override string Operand2Name => "Min";
+        public override string Operand3Name => "Max";
+        public override string OpName => "Clamp";
+        public override string OpString => "Clamp";
+        public override int ComputeOp(ref readonly int A, ref readonly int B, ref readonly int C) { return Math.Clamp(A, B, C); }
+        protected override string CodeString(string A, string B, string C, string Result) { return $"{Result} = Math.Clamp({A},{B},{C})"; }
     }
 
 }
