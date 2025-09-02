@@ -136,6 +136,9 @@ namespace Gradientspace.NodeGraph
             JsonSerializerOptions jsonOptions = new JsonSerializerOptions();
             jsonOptions.WriteIndented = true;
 
+            // adding this to avoid trying to serialize properties like Vector3d.Normalized
+            jsonOptions.IgnoreReadOnlyProperties = true;
+
             JsonSerializer.Serialize<SerializedGraph>(utf8Stream, Serialized, jsonOptions);
         }
 

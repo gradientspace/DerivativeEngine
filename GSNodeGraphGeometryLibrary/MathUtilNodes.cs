@@ -6,6 +6,10 @@ using g3;
 
 namespace Gradientspace.NodeGraph.Geometry3
 {
+    //  WyvillFalloff
+    //  LinearRampT
+
+
     public class DoubleATan2PositiveNode : StandardTrinaryMathOpNode<double, double, bool, double>
     {
         public override string Operand1Name => "Y";
