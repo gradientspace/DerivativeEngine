@@ -65,6 +65,10 @@ namespace Gradientspace.NodeGraph.Nodes
     }
 
 
+    // one-input two-output variant
+
+
+
 
     public abstract class StandardMathConstantNode<TReturn> : StandardMathOpNode, ICodeGen
         where TReturn : struct

@@ -272,49 +272,7 @@ namespace Gradientspace.NodeGraph.Geometry
 
 
         [NodeFunction]
-        [NodeReturnValue(DisplayName = "UnitVec")]
-        public static Vector3d Normalize(Vector3d V, out double Length) { Length = V.Normalize(); return V; }
-
-
-        [NodeFunction]
-        [NodeReturnValue(DisplayName = "Len")]
-        public static double Length(Vector3d A) { return A.Length; }
-
-        [NodeFunction]
-        [NodeReturnValue(DisplayName = "LenSqr")]
-        public static double LengthSqr(Vector3d A) { return A.LengthSquared; }
-
-        [NodeFunction]
-        [NodeReturnValue(DisplayName = "Dist")]
-        public static double Distance(Vector3d A, Vector3d B) { return A.Distance(B); }
-
-        [NodeFunction]
-        [NodeReturnValue(DisplayName = "DistSqr")]
-        public static double DistanceSqr(Vector3d A, Vector3d B) { return A.DistanceSquared(B); }
-
-
-
-        [NodeFunction]
-        [NodeReturnValue(DisplayName = "Degrees")]
-        public static double AngleDeg(Vector3d A, Vector3d B) { return A.AngleD(B); }
-
-        [NodeFunction]
-        [NodeReturnValue(DisplayName = "Radians")]
-        public static double AngleRad(Vector3d A, Vector3d B) { return A.AngleR(B); }
-
-
-
-        [NodeFunction]
-        [NodeReturnValue(DisplayName = "Vector3d")]
-        public static Vector3d Lerp(Vector3d A, Vector3d B, double Alpha) { return Vector3d.Lerp(A, B, Math.Clamp(Alpha, 0.0, 1.0)); }
-
-        [NodeFunction]
-        [NodeReturnValue(DisplayName = "Vector3d")]
-        public static Vector3d Round(Vector3d V, int NumDecimals = 2) { V.Round(NumDecimals); return V; }
-
-        [NodeFunction]
         public static void MakePerpVectors(Vector3d V, out Vector3d T1, out Vector3d T2) { Vector3d.MakePerpVectors(ref V, out T1, out T2); }
-
 
     }
 }

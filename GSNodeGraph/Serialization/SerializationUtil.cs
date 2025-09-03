@@ -1,6 +1,9 @@
 // Copyright Gradientspace Corp. All Rights Reserved.
 using System;
 using System.Diagnostics;
+using System.Reflection;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Gradientspace.NodeGraph
 {
@@ -106,7 +109,10 @@ namespace Gradientspace.NodeGraph
 			(object? constantValue, bool bIsDefined) = input.GetConstantValue();
 			if (bIsDefined == false || constantValue == null) 
 				return false;
-			if (useTypeName != Constant.DataType)
+
+            // Constant.DataType may include library name, eg "g3.Vector3d, geometry3Sharp",
+            // while useTypeName will not have that (currently). Maybe can construct?
+			if (Constant.DataType.StartsWith(useTypeName) == false)
 				return false;
 
 			string? stringConstant = Constant.Value.ToString();
@@ -133,17 +139,38 @@ namespace Gradientspace.NodeGraph
 						input.SetConstantValue(EnumValue);
 						return true;
 					}
+                    // not using by-integer...
+                    //if (int.TryParse(stringConstant, out int EnumID))
+                    //{
+                    //    object? EnumValue = EnumInfo.FindEnumValueFromID(EnumID);
+                    //    if (EnumValue != null)
+                    //        input.SetConstantValue(EnumValue);
+                    //}
+                }
 
-					// not using by-integer...
-					//if (int.TryParse(stringConstant, out int EnumID))
-					//{
-					//    object? EnumValue = EnumInfo.FindEnumValueFromID(EnumID);
-					//    if (EnumValue != null)
-					//        input.SetConstantValue(EnumValue);
-					//}
-				}
+                // try json deserialization
+                JsonSerializerOptions jsonOptions = new JsonSerializerOptions();
 
-				return false;
+                // look for [JsonConverter] attribute on the type. If it is found, 
+                // create an instance of this Converter as it is probably necessary for Deserialize() to work
+                JsonConverterAttribute? ConverterAttrib = inputType.GetCustomAttribute<JsonConverterAttribute>();
+                if (ConverterAttrib != null && ConverterAttrib.ConverterType != null) {
+                    JsonConverter? Converter = Activator.CreateInstance(ConverterAttrib.ConverterType) as JsonConverter;
+                    if (Converter != null)
+                        jsonOptions.Converters.Add(Converter);
+                }
+
+                try {
+                    object? result = JsonSerializer.Deserialize((JsonElement)Constant.Value, inputType, jsonOptions);
+                    if (result != null) {
+                        input.SetConstantValue(result);
+                        return true;
+                    }
+                } catch { }
+
+
+                GlobalGraphOutput.AppendError($"[SerialiationUtil.RestoreInputConstant] - cannot restore constant of type {inputType}");
+                return false;
 			}
 
 			// for int types can we cast?
