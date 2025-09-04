@@ -55,6 +55,15 @@ namespace Gradientspace.NodeGraph.Geometry
         protected override string CodeString(string Result) { return $"{Result} = Vector3d.AxisZ"; }
     }
 
+
+    [GraphNodeUIName("Vector3d")]
+    public class Vector3ConstantNode : GenericPODConstantNode<g3.Vector3d>
+    {
+        public override string? GetNodeNamespace() { return "Geometry.Vector3"; }
+        public override string GetDefaultNodeName() { return "Vector3d"; }
+    }
+
+
     public class Vector3AddNode : StandardBinaryMathOpNode<Vector3d, Vector3d, Vector3d>
     {
         public override string OpNamespace => "Geometry3.Vector3";
@@ -81,6 +90,7 @@ namespace Gradientspace.NodeGraph.Geometry
     }
     public class Vector3DivideNode : StandardBinaryMathOpNode<Vector3d, Vector3d, Vector3d>
     {
+        public override object? Operand2Default => Vector3d.One;
         public override string OpNamespace => "Geometry3.Vector3";
         public override string OpName => "Divide";
         public override string OpString => "A / B";

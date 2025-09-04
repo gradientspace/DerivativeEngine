@@ -73,6 +73,7 @@ namespace Gradientspace.NodeGraph.Nodes
     {
         public override string OpName => "Divide";
         public override string OpString => "A / B";
+        public override object? Operand2Default => 1.0;
         public override double ComputeOp(ref readonly double A, ref readonly double B) { return A / B; }
         protected override string CodeString(string A, string B, string Result) { return $"{Result} = ({A}) / ({B})"; }
     }
@@ -85,6 +86,7 @@ namespace Gradientspace.NodeGraph.Nodes
     }
     public class DoubleOneOverNode : StandardUnaryMathOpNode<double, double>
     {
+        public override object? Operand1Default => 1.0;
         public override string OpName => "OneOver";
         public override string OpString => "1 / A";
         public override double ComputeOp(ref readonly double A) { return 1.0 / A; }
@@ -119,6 +121,7 @@ namespace Gradientspace.NodeGraph.Nodes
     {
         public override string OpName => "Pow";
         public override string OpString => "A ^ B";
+        public override object? Operand2Default => 1.0;
         public override double ComputeOp(ref readonly double A, ref readonly double B) { return Math.Pow(A, B); }
         protected override string CodeString(string A, string B, string Result) { return $"{Result} = Math.Pow({A},{B})"; }
     }
@@ -131,6 +134,7 @@ namespace Gradientspace.NodeGraph.Nodes
     }
     public class DoubleInvSqrtNode : StandardUnaryMathOpNode<double, double>
     {
+        public override object? Operand1Default => 1.0;
         public override string OpName => "InvSqrt";
         public override string OpString => "InvSqrt";
         public override double ComputeOp(ref readonly double A) { return 1.0/Math.Sqrt(A); }
@@ -152,6 +156,7 @@ namespace Gradientspace.NodeGraph.Nodes
     }
     public class DoubleLnNode : StandardUnaryMathOpNode<double, double>
     {
+        public override object? Operand1Default => 1.0;
         public override string OpName => "Ln";
         public override string OpString => "Ln";
         public override double ComputeOp(ref readonly double A) { return Math.Log(A); }
@@ -159,6 +164,7 @@ namespace Gradientspace.NodeGraph.Nodes
     }
     public class DoubleLog10Node : StandardUnaryMathOpNode<double, double>
     {
+        public override object? Operand1Default => 1.0;
         public override string OpName => "Log10";
         public override string OpString => "Log10";
         public override double ComputeOp(ref readonly double A) { return Math.Log10(A); }
@@ -166,6 +172,8 @@ namespace Gradientspace.NodeGraph.Nodes
     }
     public class DoubleLogNode : StandardBinaryMathOpNode<double, double, double>
     {
+        public override object? Operand1Default => 1.0;
+        public override object? Operand2Default => 2.0;
         public override string OpName => "Log";
         public override string OpString => "Log(A,B)";
         public override double ComputeOp(ref readonly double A, ref readonly double B) { return Math.Log(A, B); }

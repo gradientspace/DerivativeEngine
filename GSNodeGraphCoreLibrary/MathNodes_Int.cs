@@ -32,6 +32,7 @@ namespace Gradientspace.NodeGraph.Nodes
     {
         public override string OpName => "Divide";
         public override string OpString => "A / B";
+        public override object? Operand2Default => 1;
         public override int ComputeOp(ref readonly int A, ref readonly int B) { return A / B; }
         protected override string CodeString(string A, string B, string Result) { return $"{Result} = ({A}) / ({B})"; }
     }
@@ -39,6 +40,7 @@ namespace Gradientspace.NodeGraph.Nodes
     {
         public override string OpName => "Modulo";
         public override string OpString => "A % B";
+        public override object? Operand2Default => 1;
         public override int ComputeOp(ref readonly int A, ref readonly int B) { return A % B; }
         protected override string CodeString(string A, string B, string Result) { return $"{Result} = ({A}) % ({B})"; }
     }
@@ -89,6 +91,7 @@ namespace Gradientspace.NodeGraph.Nodes
     public class IntLeftShiftNode : StandardBinaryMathOpNode<int, int, int>
     {
         public override string Operand2Name => "NumBits";
+        public override object? Operand2Default => 1;
         public override string OpName => "LeftShift";
         public override string OpString => "LeftShift";
         public override int ComputeOp(ref readonly int A, ref readonly int B) { return A << Math.Max(B,0); }
@@ -97,6 +100,7 @@ namespace Gradientspace.NodeGraph.Nodes
     public class IntRightShiftNode : StandardBinaryMathOpNode<int, int, int>
     {
         public override string Operand2Name => "NumBits";
+        public override object? Operand2Default => 1;
         public override string OpName => "RightShift";
         public override string OpString => "RightShift";
         public override int ComputeOp(ref readonly int A, ref readonly int B) { return A >> Math.Max(B,0); }
