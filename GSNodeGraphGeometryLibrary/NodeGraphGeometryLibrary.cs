@@ -1,9 +1,6 @@
 // Copyright Gradientspace Corp. All Rights Reserved.
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using g3;
 
 namespace Gradientspace.NodeGraph.Geometry
 {
@@ -11,6 +8,12 @@ namespace Gradientspace.NodeGraph.Geometry
     {
         public static void Initialize()
         {
+            DefaultTypeInfoLibrary.Instance.RegisterType(
+                typeof(g3.Vector3d), true, Vector3d.Zero);
+
+            DefaultTypeInfoLibrary.Instance.RegisterType(
+                typeof(g3.Ray3d), false);
+
         }
     }
 }

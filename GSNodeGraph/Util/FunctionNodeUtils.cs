@@ -270,6 +270,20 @@ namespace Gradientspace.NodeGraph
                     return new StandardNodeInputBaseWithConstant(argInfo.argType, defaultValue);
             }
 
+            // external libraries can register types for input-constant support
+            if (DefaultTypeInfoLibrary.TypeSupportsInputConstant(argInfo.argType)) 
+            {
+                object? defaultValue = DefaultTypeInfoLibrary.GetDefaultConstantValueForType(argInfo.argType);
+                // use default argument if one could be provided
+                if (paramInfo.DefaultValue != null && paramInfo.DefaultValue.GetType() == argInfo.argType)
+                    defaultValue = paramInfo.DefaultValue;
+                if (defaultValue == null)
+                    return new StandardNodeInputBase(argInfo.argType);
+                else
+                    return new StandardNodeInputBaseWithConstant(argInfo.argType, defaultValue);
+            }
+
+
             return new StandardNodeInputBase(argInfo.argType);
         }
 
