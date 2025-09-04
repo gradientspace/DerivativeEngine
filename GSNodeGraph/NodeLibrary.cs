@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
+using Gradientspace.NodeGraph.Util;
 
 namespace Gradientspace.NodeGraph
 {
@@ -191,7 +192,7 @@ namespace Gradientspace.NodeGraph
                 foreach (Type type in assembly.GetTypes()) {
                     if (type.IsSubclassOf(BaseNodeType) && type.IsAbstract == false)
                         nodeTypes.Add(type);
-                    if (IsFunctionLibraryClass(type, out string LibraryNamespace))
+                    if (AssemblyUtils.IsFunctionLibraryClass(type, out string LibraryNamespace))
                         libraryTypes.Add(new(type, LibraryNamespace));
                 }
 
@@ -213,33 +214,7 @@ namespace Gradientspace.NodeGraph
 
         protected virtual List<Assembly> FindPotentialNodeAssemblies()
         {
-			List<Assembly> AllAssemblies = new List<Assembly>(AppDomain.CurrentDomain.GetAssemblies());
-
-			// filter out known system assemblies
-			List<Assembly> TryAssemblies = new List<Assembly>();
-			foreach (Assembly assembly in AllAssemblies)
-			{
-				if (assembly.FullName?.StartsWith("System.", StringComparison.InvariantCultureIgnoreCase) ?? true)
-					continue;
-				if (assembly.FullName?.StartsWith("Microsoft.", StringComparison.InvariantCultureIgnoreCase) ?? true)
-					continue;
-
-				// libraries used to build apps...can we identify these some other way?
-				if (assembly.FullName?.StartsWith("Avalonia.", StringComparison.InvariantCultureIgnoreCase) ?? true)
-					continue;
-				if (assembly.FullName?.StartsWith("SkiaSharp", StringComparison.InvariantCultureIgnoreCase) ?? true)
-					continue;
-				if (assembly.FullName?.StartsWith("HarfBuzz", StringComparison.InvariantCultureIgnoreCase) ?? true)
-					continue;
-				if (assembly.FullName?.StartsWith("Python", StringComparison.InvariantCultureIgnoreCase) ?? true)
-					continue;
-				if (assembly.FullName?.StartsWith("geometry3Sharp", StringComparison.InvariantCultureIgnoreCase) ?? true)
-					continue;
-
-				TryAssemblies.Add(assembly);
-			}
-
-            return TryAssemblies;
+            return AssemblyUtils.FindPotentialNodeAssemblies();
 		}
 
 
@@ -353,18 +328,6 @@ namespace Gradientspace.NodeGraph
 		}
 
 
-
-		protected static bool IsFunctionLibraryClass(Type type, out string LibraryName)
-        {
-            LibraryName = type.FullName!;
-            NodeFunctionLibrary? LibraryAttrib = type.GetCustomAttribute<NodeFunctionLibrary>();
-            if (LibraryAttrib == null)
-                return false;
-            if (LibraryAttrib.LibraryName == null || LibraryAttrib.LibraryName.Length == 0)
-                return false;
-            LibraryName = LibraryAttrib.LibraryName;
-            return true;
-        }
 
 
         protected static bool GetNodeNamespace(Type nodeType, INode archetypeNode, out string Namespace)
