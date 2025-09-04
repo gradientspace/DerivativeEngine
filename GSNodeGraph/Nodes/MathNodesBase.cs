@@ -62,10 +62,79 @@ namespace Gradientspace.NodeGraph.Nodes
             return codeString;
         }
 
+
+        protected virtual void AddOperand<T>(string OperandName, object? customDefault = null) where T : struct
+        {
+            T initialValue = default;
+            if (customDefault != null && customDefault.GetType() == typeof(T))
+                initialValue = (T)customDefault;
+
+            if (DefaultTypeInfoLibrary.TypeSupportsInputConstant(typeof(T)))
+                AddInput(OperandName, new StandardNodeInputWithConstant<T>(initialValue));
+            else
+                AddInput(OperandName, new StandardNodeInput<T>());
+        }
+
     }
 
 
     // one-input two-output variant
+
+
+
+    //! this only works for POD types...
+    [ClassHierarchyNode]
+    public class GenericPODConstantNode<T> : StandardNode, ICodeGen 
+        where T : struct
+    {
+        public GenericPODConstantNode()
+        {
+            this.Flags = ENodeFlags.IsPure;
+
+            AddOutput(ValueOutputName, new StandardNodeOutput<T>());
+
+			StandardNodeInputBase input = new StandardNodeInputWithConstant<T>(new T());
+            input.Flags = ENodeInputFlags.IsNodeConstant | ENodeInputFlags.HiddenLabel;
+			AddInput(ValueInputName, input);
+        }
+
+        public static string ValueOutputName { get { return "Value"; } }
+        public static string ValueInputName { get { return "Value"; } }
+
+        public override void Evaluate(
+            ref readonly NamedDataMap DataIn,
+            NamedDataMap RequestedDataOut)
+        {
+            int OutputIndex = RequestedDataOut.IndexOfItem(ValueOutputName);
+            if (OutputIndex == -1)
+                throw new Exception($"{GetDefaultNodeName()}: output not found");
+
+            T Value = new T();
+            if ( DataIn.FindItemValueStrict<T>(ValueInputName, ref Value) == false )
+            {
+                object? Found = DataIn.FindItemValueAsType(ValueInputName, typeof(T));
+                if (Found != null)
+                    Value = (T)Found;
+                else
+                    throw new Exception(this.GetType().Name + ": could not convert input to type " + typeof(T).Name);
+            }
+
+            RequestedDataOut.SetItemValue(OutputIndex, Value);
+        }
+
+        public void GetCodeOutputNames(out string[]? OutputNames)
+        {
+            OutputNames = [ValueOutputName];
+        }
+        public string GenerateCode(string[]? Arguments, string[]? UseOutputNames)
+        {
+            CodeGenUtils.CheckArgsAndOutputs(Arguments, 1, UseOutputNames, 1, "GenericPODConstantNode");
+            string useTypeName = CodeGenUtils.GetCSharpTypeDecl(typeof(T));
+            return $"{useTypeName} {UseOutputNames![0]} = {Arguments![0]};";
+        }
+    }
+
+
 
 
 
@@ -126,6 +195,8 @@ namespace Gradientspace.NodeGraph.Nodes
         public static string Operand1Name { get { return "A"; } }
         public static string ValueOutputName { get { return "Value"; } }
 
+        public virtual object? Operand1Default => null;
+
         public override string? GetNodeNamespace() { return OpNamespace; }
         public override string GetDefaultNodeName() { return OpString; }
 
@@ -138,7 +209,7 @@ namespace Gradientspace.NodeGraph.Nodes
         {
             Flags = ENodeFlags.IsPure;
 
-            AddInput(Operand1Name, new StandardNodeInputWithConstant<T1>());
+            AddOperand<T1>(Operand1Name, Operand1Default);
             AddOutput(ValueOutputName, new StandardNodeOutput<TReturn>());
         }
 
@@ -183,6 +254,9 @@ namespace Gradientspace.NodeGraph.Nodes
         public virtual string Operand2Name => "B";
         public virtual string ValueOutputName => "Value";
 
+        public virtual object? Operand1Default => null;
+        public virtual object? Operand2Default => null;
+
         public override string? GetNodeNamespace() { return OpNamespace; }
         public override string GetDefaultNodeName() { return OpString; }
 
@@ -195,8 +269,9 @@ namespace Gradientspace.NodeGraph.Nodes
         {
             Flags = ENodeFlags.IsPure;
 
-            AddInput(Operand1Name, new StandardNodeInputWithConstant<T1>());
-            AddInput(Operand2Name, new StandardNodeInputWithConstant<T2>());
+            AddOperand<T1>(Operand1Name, Operand1Default);
+            AddOperand<T2>(Operand2Name, Operand2Default);
+
             AddOutput(ValueOutputName, new StandardNodeOutput<TReturn>());
         }
 
@@ -243,6 +318,10 @@ namespace Gradientspace.NodeGraph.Nodes
         public virtual string Operand3Name => "C";
         public virtual string ValueOutputName => "Value";
 
+        public virtual object? Operand1Default => null;
+        public virtual object? Operand2Default => null;
+        public virtual object? Operand3Default => null;
+
         public override string? GetNodeNamespace() { return OpNamespace; }
         public override string GetDefaultNodeName() { return OpString; }
 
@@ -255,9 +334,9 @@ namespace Gradientspace.NodeGraph.Nodes
         {
             Flags = ENodeFlags.IsPure;
 
-            AddInput(Operand1Name, new StandardNodeInputWithConstant<T1>());
-            AddInput(Operand2Name, new StandardNodeInputWithConstant<T2>());
-            AddInput(Operand3Name, new StandardNodeInputWithConstant<T3>());
+            AddOperand<T1>(Operand1Name, Operand1Default);
+            AddOperand<T2>(Operand2Name, Operand2Default);
+            AddOperand<T3>(Operand3Name, Operand3Default);
             AddOutput(ValueOutputName, new StandardNodeOutput<TReturn>());
         }
 

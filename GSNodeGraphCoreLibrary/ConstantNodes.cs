@@ -5,60 +5,6 @@ using System.Reflection;
 
 namespace Gradientspace.NodeGraph.Nodes
 {
-    //! this only works for POD types...
-    [ClassHierarchyNode]
-    public class GenericPODConstantNode<T> : StandardNode, ICodeGen 
-        where T : struct
-    {
-        public GenericPODConstantNode()
-        {
-            this.Flags = ENodeFlags.IsPure;
-
-            AddOutput(ValueOutputName, new StandardNodeOutput<T>());
-
-			StandardNodeInputBase input = new StandardNodeInputWithConstant<T>(new T());
-            input.Flags = ENodeInputFlags.IsNodeConstant | ENodeInputFlags.HiddenLabel;
-			AddInput(ValueInputName, input);
-        }
-
-        public static string ValueOutputName { get { return "Value"; } }
-        public static string ValueInputName { get { return "Value"; } }
-
-        public override void Evaluate(
-            ref readonly NamedDataMap DataIn,
-            NamedDataMap RequestedDataOut)
-        {
-            int OutputIndex = RequestedDataOut.IndexOfItem(ValueOutputName);
-            if (OutputIndex == -1)
-                throw new Exception($"{GetDefaultNodeName()}: output not found");
-
-            T Value = new T();
-            if ( DataIn.FindItemValueStrict<T>(ValueInputName, ref Value) == false )
-            {
-                object? Found = DataIn.FindItemValueAsType(ValueInputName, typeof(T));
-                if (Found != null)
-                    Value = (T)Found;
-                else
-                    throw new Exception(this.GetType().Name + ": could not convert input to type " + typeof(T).Name);
-            }
-
-            RequestedDataOut.SetItemValue(OutputIndex, Value);
-        }
-
-        public void GetCodeOutputNames(out string[]? OutputNames)
-        {
-            OutputNames = [ValueOutputName];
-        }
-        public string GenerateCode(string[]? Arguments, string[]? UseOutputNames)
-        {
-            CodeGenUtils.CheckArgsAndOutputs(Arguments, 1, UseOutputNames, 1, "GenericPODConstantNode");
-            string useTypeName = CodeGenUtils.GetCSharpTypeDecl(typeof(T));
-            return $"{useTypeName} {UseOutputNames![0]} = {Arguments![0]};";
-        }
-    }
-
-
-
     [GraphNodeNamespace("Core.Constants")]
     [GraphNodeUIName("int")]
     public class Int32ConstantNode : GenericPODConstantNode<int>
