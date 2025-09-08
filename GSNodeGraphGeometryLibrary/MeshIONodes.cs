@@ -23,7 +23,10 @@ namespace Gradientspace.NodeGraph.Geometry
             IOReadResult result = reader.Read(Path, ReadOptions.Defaults);
             if (result.code == IOCode.Ok && builder.Meshes.Count > 0)
             {
-                return builder.Meshes[0];
+                DMesh3 Result = builder.Meshes[0];
+                for (int i = 1; i < builder.Meshes.Count; ++i)
+                    MeshEditor.AppendMesh(Result, builder.Meshes[i]);
+                return Result;
             }
             return null;
         }
@@ -33,6 +36,10 @@ namespace Gradientspace.NodeGraph.Geometry
         [NodeParameter("Path", DisplayName = "OutputPath", DefaultValue ="c:\\scratch\\AA_FROM_GRAPH.obj")]
         public static void ExportMesh(string Path, DMesh3 Mesh)
         {
+            if (Mesh == null) {
+                GlobalGraphOutput.AppendError("[ExportMesh] Mesh is null");
+                return;
+            }
             WriteOptions writeOptions = WriteOptions.Defaults;
             writeOptions.bPerVertexNormals = true;
             writeOptions.bPerVertexUVs = true;
@@ -45,16 +52,33 @@ namespace Gradientspace.NodeGraph.Geometry
 
 
         [NodeFunction]
-        [NodeReturnValue(DisplayName = "Mesh")]
-        public static DMesh3? TestImportGLTF(string Path = "D:\\samplefiles\\gltf_avocado\\Avocado.gltf")
+        [NodeReturnValue(DisplayName = "Meshes")]
+        public static List<DMesh3> ImportMeshes(string Path = "c:\\scratch\\bunny.obj")
         {
-            using (FileStream fileStream = File.OpenRead(Path)) {
-                var result = GLTFFile.ParseFile(fileStream);
-                GLTFFile.Root data = result.Value;
+            DMesh3Builder builder = new DMesh3Builder();
+            StandardMeshReader reader = new StandardMeshReader() { MeshBuilder = builder };
+            ReadOptions options = ReadOptions.Defaults;
+            options.BaseFilePath = System.IO.Path.GetDirectoryName(Path);
+            IOReadResult result = reader.Read(Path, ReadOptions.Defaults);
+            return builder.Meshes;
+        }
 
-                GlobalGraphOutput.AppendLine("read..");
-            }
-            return null;
+
+        [NodeFunction]
+        [NodeParameter("Path", DisplayName = "OutputPath", DefaultValue = "c:\\scratch\\AA_FROM_GRAPH.obj")]
+        public static void ExportMeshes(string Path, IEnumerable<DMesh3> Meshes)
+        {
+            List<WriteMesh> writeMeshes = new List<WriteMesh>();
+            foreach (DMesh3 mesh in Meshes)
+                writeMeshes.Add(new WriteMesh(mesh));
+
+            WriteOptions writeOptions = WriteOptions.Defaults;
+            writeOptions.bPerVertexNormals = true;
+            writeOptions.bPerVertexUVs = true;
+            writeOptions.bPerVertexColors = true;
+            writeOptions.bWriteGroups = true;
+            writeOptions.bCombineMeshes = false;
+            IOWriteResult result = StandardMeshWriter.WriteFile(Path, writeMeshes, writeOptions);
         }
 
     }
