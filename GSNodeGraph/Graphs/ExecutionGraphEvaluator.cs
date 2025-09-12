@@ -62,7 +62,10 @@ namespace Gradientspace.NodeGraph
                 DebugManager.Instance.EndGraphExecutionDebugSession();
 
             reset_cache();
-		}
+
+            // force a GC to clean up any extra data
+            GC.Collect();
+        }
 
 
 
