@@ -5,8 +5,6 @@ using Gradientspace.NodeGraph.Nodes;
 
 namespace Gradientspace.NodeGraph.Geometry
 {
-    // Normalize (return length)
-    // MakePerpVectors
     // Orthonormalize
     // PlaneAngleD, PlaneAngleSignedD
     // TriArea, TriNormal, TriAspectRatio, TriIsObtuse
@@ -59,7 +57,7 @@ namespace Gradientspace.NodeGraph.Geometry
     [GraphNodeUIName("Vector3d")]
     public class Vector3ConstantNode : GenericPODConstantNode<g3.Vector3d>
     {
-        public override string? GetNodeNamespace() { return "Geometry.Vector3"; }
+        public override string? GetNodeNamespace() { return "Geometry3.Vector3"; }
         public override string GetDefaultNodeName() { return "Vector3d"; }
     }
 
@@ -104,6 +102,18 @@ namespace Gradientspace.NodeGraph.Geometry
         public override string OpString => "-A";
         public override Vector3d ComputeOp(ref readonly Vector3d A) { return -A; }
         protected override string CodeString(string A, string Result) { return $"{Result} = -({A})"; }
+    }
+
+    public class Vector3NormalizeNode : StandardUnaryMathOpNode2<Vector3d, Vector3d, double>
+    {
+        public override string OpNamespace => "Geometry3.Vector3";
+        public override string OpName => "Normalize";
+        public override string Operand1Name => "Vec3";
+        public override string Output1Name => "UnitVec3";
+        public override string Output2Name => "Length"; 
+        public override string OpString => "Normalize";
+        public override (Vector3d,double) ComputeOp(ref readonly Vector3d A) { Vector3d tmp = A; double len = tmp.Normalize(); return (tmp, len);  }
+        protected override string CodeString(string A, string Result1, string Result2) { return $"{{Vector3d tmp = {A}; {Result2} = tmp.Normalize(); {Result1}=tmp;}}"; }
     }
 
     public class Vector3DotNode : StandardBinaryMathOpNode<Vector3d, Vector3d, double>
@@ -250,6 +260,17 @@ namespace Gradientspace.NodeGraph.Geometry
     }
 
 
+    public class Vector3MakePerpNode : StandardUnaryMathOpNode2<Vector3d, Vector3d, Vector3d>
+    {
+        public override string OpNamespace => "Geometry3.Vector3";
+        public override string OpName => "MakePerp";
+        public override string Output1Name => "PerpX";
+        public override string Output2Name => "PerpY";
+        public override string OpString => "MakePerp";
+        public override (Vector3d, Vector3d) ComputeOp(ref readonly Vector3d A) { Vector3d x, y; Vector3d.MakePerpVectors(A, out x, out y); return (x, y); }
+        protected override string CodeString(string A, string Result1, string Result2) { return $"Vector3d.MakePerpVectors({A}, out {Result1}, out {Result2})"; }
+    }
+
 
     [NodeFunctionLibrary("Geometry3.Vector3")]
     public static class G3Vector3Functions
@@ -279,10 +300,6 @@ namespace Gradientspace.NodeGraph.Geometry
         {
             x = Vec.x; y = Vec.y; z = Vec.z;
         }
-
-
-        [NodeFunction]
-        public static void MakePerpVectors(Vector3d V, out Vector3d T1, out Vector3d T2) { Vector3d.MakePerpVectors(ref V, out T1, out T2); }
 
     }
 }

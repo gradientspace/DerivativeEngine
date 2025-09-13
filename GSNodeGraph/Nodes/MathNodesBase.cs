@@ -247,6 +247,71 @@ namespace Gradientspace.NodeGraph.Nodes
 
 
 
+
+    public abstract class StandardUnaryMathOpNode2<T1, TReturn1, TReturn2> : StandardMathOpNode, ICodeGen
+        where T1 : struct where TReturn1 : struct where TReturn2 : struct
+    {
+        public virtual string Operand1Name => "A";
+        public virtual string Output1Name => "Value1";
+        public virtual string Output2Name => "Value2";
+
+        public virtual object? Operand1Default => null;
+
+        public override string? GetNodeNamespace() { return OpNamespace; }
+        public override string GetDefaultNodeName() { return OpString; }
+
+        public virtual string OpNamespace => "Core.Math";
+        public abstract string OpName { get; }
+        public abstract string OpString { get; }
+        public abstract (TReturn1,TReturn2) ComputeOp(ref readonly T1 A);
+
+        public StandardUnaryMathOpNode2()
+        {
+            Flags = ENodeFlags.IsPure;
+
+            AddOperand<T1>(Operand1Name, Operand1Default);
+            AddOutput(Output1Name, new StandardNodeOutput<TReturn1>());
+            AddOutput(Output2Name, new StandardNodeOutput<TReturn2>());
+        }
+
+        public override void Evaluate(
+            ref readonly NamedDataMap DataIn,
+            NamedDataMap RequestedDataOut)
+        {
+            int OutputIndex1 = RequestedDataOut.IndexOfItem(Output1Name);
+            int OutputIndex2 = RequestedDataOut.IndexOfItem(Output2Name);
+            if (OutputIndex1 == -1 && OutputIndex2 == -1)
+                throw new Exception(OpName + ": output not found");
+
+            T1 A = DataIn.FindStructValueOrDefault<T1>(Operand1Name, default(T1), false);
+            (TReturn1 Result1, TReturn2 Result2) = ComputeOp(ref A);
+
+            if (OutputIndex1 >= 0) RequestedDataOut.SetItemValue(OutputIndex1, Result1);
+            if (OutputIndex2 >= 0) RequestedDataOut.SetItemValue(OutputIndex2, Result2);
+        }
+
+
+        // ICodeGen interface
+        public void GetCodeOutputNames(out string[]? OutputNames)
+        {
+            OutputNames = [Output1Name, Output2Name];
+        }
+        public string GenerateCode(string[]? Arguments, string[]? UseOutputNames)
+        {
+            CodeGenUtils.CheckArgsAndOutputs(Arguments, 1, UseOutputNames, 2, this.ToString());
+            string str = CodeString(Arguments![0], UseOutputNames![0], UseOutputNames![1]);
+            return ProcessCodeString(str);
+        }
+        protected virtual string CodeString(string A, string Result1, string Result2)
+        {
+            return $"{Result1} = {A}";
+        }
+    }
+
+
+
+
+
     public abstract class StandardBinaryMathOpNode<T1, T2, TReturn> : StandardMathOpNode, ICodeGen 
         where T1 : struct where T2 : struct where TReturn : struct
     {
