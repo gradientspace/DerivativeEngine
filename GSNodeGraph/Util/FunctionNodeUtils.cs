@@ -12,6 +12,7 @@ namespace Gradientspace.NodeGraph
         public Type argType;
         public string argName;
 
+        public bool bIsRefInput;        // ref inputs are mirrored as an output
         public bool bIsOptional;        // for nullable arguments
     }
 
@@ -130,6 +131,7 @@ namespace Gradientspace.NodeGraph
                     inputArg.argIndex = i;
                     inputArg.argName = paramName;
                     inputArg.bIsOptional = bIsNullable;
+                    inputArg.bIsRefInput = bIsRefParam;
                     inputArg.argType = (bIsNullable) ? realType! : baseType;
                     InputArguments[InputI++] = inputArg;
                     //INodeInput nodeInput = LibraryFunctionBuilderUtils.BuildInputNodeForType(inputArg, ref paramName, Function, paramInfo);
@@ -194,7 +196,7 @@ namespace Gradientspace.NodeGraph
 
 
 
-        public static INodeInput BuildInputNodeForMethodArgument(FuncInputArgInfo argInfo, ref string paramName, MethodInfo sourceFunction, ParameterInfo paramInfo)
+        public static StandardNodeInputBase BuildInputNodeForMethodArgument(FuncInputArgInfo argInfo, ref string paramName, MethodInfo sourceFunction, ParameterInfo paramInfo)
         {
             // todo cache this and pass to this function
             NodeParameter? foundParamInfo = null;
@@ -207,45 +209,47 @@ namespace Gradientspace.NodeGraph
                 }
             }
 
+            StandardNodeInputBase? NewInput = null;
+
             if (argInfo.bIsOptional)
             {
-                return new StandardNullableNodeInput(argInfo.argType);
+                NewInput = new StandardNullableNodeInput(argInfo.argType);
             }
             else if (argInfo.argType == typeof(bool)) {
                 bool defaultValue = false;
                 if (paramInfo.DefaultValue != null && paramInfo.DefaultValue is bool)
                     defaultValue = (bool)paramInfo.DefaultValue;
-                return new StandardNodeInputBaseWithConstant(argInfo.argType, defaultValue);
+                NewInput = new StandardNodeInputBaseWithConstant(argInfo.argType, defaultValue);
             }
             else if (argInfo.argType == typeof(float)) {
                 float defaultValue = 0.0f;
                 if (paramInfo.DefaultValue != null && paramInfo.DefaultValue is float)
                     defaultValue = (float)paramInfo.DefaultValue;
-                return new StandardNodeInputBaseWithConstant(argInfo.argType, defaultValue);
+                NewInput = new StandardNodeInputBaseWithConstant(argInfo.argType, defaultValue);
             }
             else if (argInfo.argType == typeof(double)) {
                 double defaultValue = 0.0;
                 if (paramInfo.DefaultValue != null && paramInfo.DefaultValue is double)
                     defaultValue = (double)paramInfo.DefaultValue;
-                return new StandardNodeInputBaseWithConstant(argInfo.argType, defaultValue);
+                NewInput = new StandardNodeInputBaseWithConstant(argInfo.argType, defaultValue);
             }
             else if (argInfo.argType == typeof(int)) {
                 int defaultValue = 0;
                 if (paramInfo.DefaultValue != null && paramInfo.DefaultValue is int)
                     defaultValue = (int)paramInfo.DefaultValue;
-                return new StandardNodeInputBaseWithConstant(argInfo.argType, defaultValue);
+                NewInput = new StandardNodeInputBaseWithConstant(argInfo.argType, defaultValue);
             }
             else if (argInfo.argType == typeof(short)) {
                 short defaultValue = 0;
                 if (paramInfo.DefaultValue != null && paramInfo.DefaultValue is short)
                     defaultValue = (short)paramInfo.DefaultValue;
-                return new StandardNodeInputBaseWithConstant(argInfo.argType, defaultValue);
+                NewInput = new StandardNodeInputBaseWithConstant(argInfo.argType, defaultValue);
             }
             else if (argInfo.argType == typeof(long)) {
                 long defaultValue = 0;
                 if (paramInfo.DefaultValue != null && paramInfo.DefaultValue is long)
                     defaultValue = (long)paramInfo.DefaultValue;
-                return new StandardNodeInputBaseWithConstant(argInfo.argType, defaultValue);
+                NewInput = new StandardNodeInputBaseWithConstant(argInfo.argType, defaultValue);
             }
             else if (argInfo.argType == typeof(string)) {
                 string defaultValue = "";
@@ -253,7 +257,7 @@ namespace Gradientspace.NodeGraph
                     defaultValue = (string)paramInfo.DefaultValue;
                 if (foundParamInfo != null && foundParamInfo.DefaultValue != null && foundParamInfo.DefaultValue is string)
                     defaultValue = (string)foundParamInfo.DefaultValue;
-                return new StandardNodeInputBaseWithConstant(argInfo.argType, defaultValue);
+                NewInput = new StandardNodeInputBaseWithConstant(argInfo.argType, defaultValue);
             }
             else if (argInfo.argType.IsEnum)
             {
@@ -265,26 +269,32 @@ namespace Gradientspace.NodeGraph
                 if (foundParamInfo != null && foundParamInfo.DefaultValue != null && foundParamInfo.DefaultValue.GetType().IsEnum)
                     defaultValue = foundParamInfo.DefaultValue;
                 if (defaultValue == null)
-                    return new StandardNodeInputBase(argInfo.argType);
+                    NewInput = new StandardNodeInputBase(argInfo.argType);
                 else
-                    return new StandardNodeInputBaseWithConstant(argInfo.argType, defaultValue);
+                    NewInput = new StandardNodeInputBaseWithConstant(argInfo.argType, defaultValue);
             }
 
             // external libraries can register types for input-constant support
-            if (DefaultTypeInfoLibrary.TypeSupportsInputConstant(argInfo.argType)) 
+            if (NewInput == null && DefaultTypeInfoLibrary.TypeSupportsInputConstant(argInfo.argType)) 
             {
                 object? defaultValue = DefaultTypeInfoLibrary.GetDefaultConstantValueForType(argInfo.argType);
                 // use default argument if one could be provided
                 if (paramInfo.DefaultValue != null && paramInfo.DefaultValue.GetType() == argInfo.argType)
                     defaultValue = paramInfo.DefaultValue;
                 if (defaultValue == null)
-                    return new StandardNodeInputBase(argInfo.argType);
+                    NewInput = new StandardNodeInputBase(argInfo.argType);
                 else
-                    return new StandardNodeInputBaseWithConstant(argInfo.argType, defaultValue);
+                    NewInput = new StandardNodeInputBaseWithConstant(argInfo.argType, defaultValue);
             }
 
+            if (NewInput == null) {
+                NewInput = new StandardNodeInputBase(argInfo.argType);
+            }
 
-            return new StandardNodeInputBase(argInfo.argType);
+            if (argInfo.bIsRefInput)
+                NewInput.Flags |= ENodeInputFlags.IsInOut;
+
+            return NewInput;
         }
 
 
