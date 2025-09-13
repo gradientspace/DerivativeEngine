@@ -241,7 +241,7 @@ namespace Gradientspace.NodeGraph.Geometry
     public class Vector3LerpNode : StandardTrinaryMathOpNode<Vector3d, Vector3d, double, Vector3d>
     {
         public override string OpNamespace => "Geometry3.Vector3";
-        public override string Operand3Name => "Alpha";
+        public override string Operand3Name => "T";
         public override string OpName => "Lerp";
         public override string OpString => "Lerp";
         public override Vector3d ComputeOp(ref readonly Vector3d A, ref readonly Vector3d B, ref readonly double C) { return Vector3d.Lerp(A,B,C); }
