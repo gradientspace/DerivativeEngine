@@ -289,13 +289,13 @@ namespace Gradientspace.NodeGraph.Geometry
         }
 
 
-        [NodeFunction]
+        [NodeFunction(IsPure=true)]
         [NodeReturnValue(DisplayName = "Vector3d")]
         public static Vector3d MakeVec3(double x = 0, double y = 0, double z = 0)
         {
             return new Vector3d(x, y, z);
         }
-        [NodeFunction]
+        [NodeFunction(IsPure=true)]
         public static void BreakVec3(Vector3d Vec, out double x, out double y, out double z)
         {
             x = Vec.x; y = Vec.y; z = Vec.z;
