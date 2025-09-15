@@ -4,49 +4,73 @@ using g3;
 
 namespace Gradientspace.NodeGraph.Geometry
 {
+    // PerVertexTransform functions
+
     [NodeFunctionLibrary("Geometry3.MeshTransforms")]
     [MappedFunctionLibraryName("Geometry.MeshTransforms")]
     public static class G3MeshTransformFunctions
     {
         [NodeFunction]
-        [NodeReturnValue(DisplayName = "Mesh")]
-        public static DMesh3? TranslateMesh(DMesh3 Mesh, float x = 0, float y = 0, float z = 0)
+        public static void TranslateMesh(ref DMesh3 Mesh, Vector3d Translation)
         {
-            MeshTransforms.Translate(Mesh, new Vector3d(x, y, z));
-            return Mesh;
-        }
-
-
-        [NodeFunction]
-        [NodeReturnValue(DisplayName = "Mesh")]
-        public static DMesh3? ReverseOrientation(DMesh3 Mesh, bool bFlipNormals = true)
-        {
-            Mesh.ReverseOrientation(bFlipNormals);
-            return Mesh;
+            MeshTransforms.Translate(Mesh, Translation);
         }
 
         [NodeFunction]
-        [NodeReturnValue(DisplayName = "Mesh")]
-        public static DMesh3? YUpToZup(DMesh3 Mesh)
+        public static void ScaleMesh(ref DMesh3 Mesh, Vector3d Scale, Vector3d Origin)
+        {
+            MeshTransforms.Scale(Mesh, Scale, Origin);
+        }
+
+        [NodeFunction]
+        public static void RotateMesh(ref DMesh3 Mesh, Quaterniond Rotation, Vector3d Origin)
+        {
+            MeshTransforms.Rotate(Mesh, Origin, Rotation);
+        }
+
+        [NodeFunction]
+        public static void WorldToFrame(ref DMesh3 Mesh, Frame3d Frame)
+        {
+            MeshTransforms.ToFrame(Mesh, Frame);
+        }
+
+        [NodeFunction]
+        public static void FrameToWorld(ref DMesh3 Mesh, Frame3d Frame)
+        {
+            MeshTransforms.FromFrame(Mesh, Frame);
+        }
+
+        [NodeFunction]
+        public static void TransformMesh(ref DMesh3 Mesh, Matrix4d Transform)
+        {
+            MeshTransforms.TransformMesh(Mesh, Transform);
+        }
+
+
+
+
+        [NodeFunction]
+        public static void FlipOrientation(ref DMesh3 Mesh, bool FlipNormals = true)
+        {
+            Mesh.ReverseOrientation(FlipNormals);
+        }
+
+        [NodeFunction]
+        public static void YUpToZup(ref DMesh3 Mesh)
         {
             MeshTransforms.ConvertYUpToZUp(Mesh);
-            return Mesh;
         }
 
         [NodeFunction]
-        [NodeReturnValue(DisplayName = "Mesh")]
-        public static DMesh3? ZUpToYUp(DMesh3 Mesh)
+        public static void ZUpToYUp(ref DMesh3 Mesh)
         {
             MeshTransforms.ConvertZUpToYUp(Mesh);
-            return Mesh;
         }
 
         [NodeFunction]
-        [NodeReturnValue(DisplayName = "Mesh")]
-        public static DMesh3? FlipHandedness(DMesh3 Mesh)
+        public static void FlipHandedness(ref DMesh3 Mesh)
         {
             MeshTransforms.FlipLeftRightCoordSystems(Mesh);
-            return Mesh;
         }
 
     }

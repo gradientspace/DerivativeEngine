@@ -8,8 +8,7 @@ namespace Gradientspace.NodeGraph.Geometry3
     [NodeFunctionLibrary("Geometry3.Primitives")]
     public static class G3MeshPrimitiveFunctions
     {
-        [NodeFunction]
-        [NodeReturnValue(DisplayName = "Mesh")]
+        [NodeFunction(ReturnName="Mesh")]
         public static DMesh3? CreateSphere(float Radius = 1.0f, int Subdivisions = 4)
         {
             Subdivisions = Math.Clamp(Subdivisions, 0, 100);
