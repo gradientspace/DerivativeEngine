@@ -13,8 +13,7 @@ namespace Gradientspace.NodeGraph.Geometry
 
         [NodeFunction]
         [NodeReturnValue(DisplayName = "Mesh")]
-        //[NodeParameter("Path", DisplayName = "PathX", DefaultValue ="c:\\scratch\\bunny.obj")]
-        public static DMesh3? ImportMesh(string Path = "c:\\scratch\\bunny.obj")
+        public static DMesh3? ImportMesh(string Path = "bunny.obj")
         {
             DMesh3Builder builder = new DMesh3Builder();
             StandardMeshReader reader = new StandardMeshReader() { MeshBuilder = builder };
@@ -33,7 +32,7 @@ namespace Gradientspace.NodeGraph.Geometry
 
 
         [NodeFunction]
-        [NodeParameter("Path", DisplayName = "OutputPath", DefaultValue ="c:\\scratch\\AA_FROM_GRAPH.obj")]
+        [NodeParameter("Path", DisplayName = "OutputPath", DefaultValue ="export.obj")]
         public static void ExportMesh(string Path, DMesh3 Mesh)
         {
             if (Mesh == null) {
@@ -53,7 +52,7 @@ namespace Gradientspace.NodeGraph.Geometry
 
         [NodeFunction]
         [NodeReturnValue(DisplayName = "Meshes")]
-        public static List<DMesh3> ImportMeshes(string Path = "c:\\scratch\\bunny.obj")
+        public static List<DMesh3> ImportMeshes(string Path = "bunny.obj")
         {
             DMesh3Builder builder = new DMesh3Builder();
             StandardMeshReader reader = new StandardMeshReader() { MeshBuilder = builder };
@@ -65,7 +64,7 @@ namespace Gradientspace.NodeGraph.Geometry
 
 
         [NodeFunction]
-        [NodeParameter("Path", DisplayName = "OutputPath", DefaultValue = "c:\\scratch\\AA_FROM_GRAPH.obj")]
+        [NodeParameter("Path", DisplayName = "OutputPath", DefaultValue = "export.obj")]
         public static void ExportMeshes(string Path, IEnumerable<DMesh3> Meshes)
         {
             List<WriteMesh> writeMeshes = new List<WriteMesh>();

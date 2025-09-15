@@ -11,4 +11,13 @@
     <ProjectReference Include="..\GSNodeGraph\GSNodeGraph.csproj" />
   </ItemGroup>
 
+
+    <!--- This will copy files to the output folder for this project and also any dependent project -->
+    <ItemGroup>
+	    <Content Include="samplefiles\bunny.obj">
+		    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		    <TargetPath>bunny.obj</TargetPath>
+	    </Content>
+    </ItemGroup>
+
 </Project>
