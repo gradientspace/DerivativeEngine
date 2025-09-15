@@ -108,8 +108,8 @@ namespace Gradientspace.NodeGraph.Geometry
         public override string Operand3Name => "Epsilon";
         public override string OpName => "EpsEqual";
         public override string OpString => "EpsEqual";
-        public override bool ComputeOp(ref readonly Matrix4d A, ref readonly Matrix4d B, ref readonly double C) { return A.EpsilonEqual(B, C); }
-        protected override string CodeString(string A, string B, string C, string Result) { return $"{Result} = ({A}).EpsilonEqual({B},{C})"; }
+        public override bool ComputeOp(ref readonly Matrix4d A, ref readonly Matrix4d B, ref readonly double C) { return A.EpsilonEqual(in B, C); }
+        protected override string CodeString(string A, string B, string C, string Result) { return $"{Result} = ({A}).EpsilonEqual(in {B},{C})"; }
     }
 
 }

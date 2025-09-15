@@ -60,6 +60,29 @@ namespace Gradientspace.NodeGraph.Geometry
         public override string? GetNodeNamespace() { return "Geometry3.Vector3"; }
         public override string GetDefaultNodeName() { return "Vector3d"; }
     }
+    public class Vector3MakeNode : StandardTrinaryMathOpNode<double, double, double, Vector3d>
+    {
+        public override string OpNamespace => "Geometry3.Vector3";
+        public override string Operand1Name => "X";
+        public override string Operand2Name => "Y";
+        public override string Operand3Name => "Z";
+        public override string OpName => "MakeVec3";
+        public override string OpString => "MakeVec3";
+        public override Vector3d ComputeOp(ref readonly double A, ref readonly double B, ref readonly double C) { return new Vector3d(A, B, C); }
+        protected override string CodeString(string A, string B, string C, string Result) { return $"{Result} = new Vector3d({A}, {B}, {C})"; }
+    }
+    public class Vector3BreakNode : StandardUnaryMathOpNode3<Vector3d, double, double, double>
+    {
+        public override string OpNamespace => "Geometry3.Quaternion";
+        public override string OpName => "BreakVec3";
+        public override string OpString => "BreakVec3";
+        public override string Operand1Name => "V";
+        public override string Output1Name => "X";
+        public override string Output2Name => "Y";
+        public override string Output3Name => "Z";
+        public override (double, double, double) ComputeOp(ref readonly Vector3d A) { return (A.x, A.y, A.z); }
+        protected override string CodeString(string A, string Result1, string Result2, string Result3) { return $"{Result1}=({A}).x; {Result2}=({A}).y; {Result3}=({A}).z;"; }
+    }
 
 
     public class Vector3AddNode : StandardBinaryMathOpNode<Vector3d, Vector3d, Vector3d>
@@ -287,19 +310,5 @@ namespace Gradientspace.NodeGraph.Geometry
         public static Vector3d ConvertScalarToVector3i(int i) {
             return new Vector3d((double)i);
         }
-
-
-        [NodeFunction(IsPure=true)]
-        [NodeReturnValue(DisplayName = "Vector3d")]
-        public static Vector3d MakeVec3(double x = 0, double y = 0, double z = 0)
-        {
-            return new Vector3d(x, y, z);
-        }
-        [NodeFunction(IsPure=true)]
-        public static void BreakVec3(Vector3d Vec, out double x, out double y, out double z)
-        {
-            x = Vec.x; y = Vec.y; z = Vec.z;
-        }
-
     }
 }

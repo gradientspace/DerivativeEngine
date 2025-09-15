@@ -508,4 +508,75 @@ namespace Gradientspace.NodeGraph.Nodes
 
 
 
+
+    public abstract class StandardFourArgMathOpNode<T1, T2, T3, T4, TReturn> : StandardMathOpNode, ICodeGen
+        where T1 : struct where T2 : struct where T3 : struct where T4 : struct where TReturn : struct
+    {
+        public virtual string Operand1Name => "A";
+        public virtual string Operand2Name => "B";
+        public virtual string Operand3Name => "C";
+        public virtual string Operand4Name => "D";
+        public virtual string ValueOutputName => "Value";
+
+        public virtual object? Operand1Default => null;
+        public virtual object? Operand2Default => null;
+        public virtual object? Operand3Default => null;
+        public virtual object? Operand4Default => null;
+
+        public override string? GetNodeNamespace() { return OpNamespace; }
+        public override string GetDefaultNodeName() { return OpString; }
+
+        public virtual string OpNamespace => "Core.Math";
+        public abstract string OpName { get; }
+        public abstract string OpString { get; }
+        public abstract TReturn ComputeOp(ref readonly T1 A, ref readonly T2 B, ref readonly T3 C, ref readonly T4 D);
+
+        public StandardFourArgMathOpNode()
+        {
+            Flags = ENodeFlags.IsPure;
+
+            AddOperand<T1>(Operand1Name, Operand1Default);
+            AddOperand<T2>(Operand2Name, Operand2Default);
+            AddOperand<T3>(Operand3Name, Operand3Default);
+            AddOperand<T4>(Operand4Name, Operand4Default);
+            AddOutput(ValueOutputName, new StandardNodeOutput<TReturn>());
+        }
+
+        public override void Evaluate(
+            ref readonly NamedDataMap DataIn,
+            NamedDataMap RequestedDataOut)
+        {
+            int OutputIndex = RequestedDataOut.IndexOfItem(ValueOutputName);
+            if (OutputIndex == -1)
+                throw new Exception(OpName + ": output not found");
+
+            T1 A = DataIn.FindStructValueOrDefault<T1>(Operand1Name, default(T1), false);
+            T2 B = DataIn.FindStructValueOrDefault<T2>(Operand2Name, default(T2), false);
+            T3 C = DataIn.FindStructValueOrDefault<T3>(Operand3Name, default(T3), false);
+            T4 D = DataIn.FindStructValueOrDefault<T4>(Operand4Name, default(T4), false);
+            TReturn Result = ComputeOp(ref A, ref B, ref C, ref D);
+
+            RequestedDataOut.SetItemValue(OutputIndex, Result);
+        }
+
+
+        // ICodeGen interface
+        public void GetCodeOutputNames(out string[]? OutputNames)
+        {
+            OutputNames = ["Value"];
+        }
+        public string GenerateCode(string[]? Arguments, string[]? UseOutputNames)
+        {
+            CodeGenUtils.CheckArgsAndOutputs(Arguments, 4, UseOutputNames, 1, this.ToString());
+            string str = CodeString(Arguments![0], Arguments![1], Arguments![2], Arguments![3], UseOutputNames![0]);
+            return ProcessCodeString(str);
+        }
+        protected virtual string CodeString(string A, string B, string C, string D, string Result)
+        {
+            return $"{Result} = {A} + {B} + {C} + {D}";
+        }
+    }
+
+
+
 }
