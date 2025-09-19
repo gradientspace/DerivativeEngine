@@ -287,6 +287,23 @@ namespace Gradientspace.NodeGraph
                     NewInput = new StandardNodeInputBaseWithConstant(argInfo.argType, defaultValue);
             }
 
+            // for value/struct types, if we can find a parameterless constructor, we can use it
+            // as the default value. However in this case we cannot be certain it is safe to
+            // serialize the value, and so we set the ConstantIsTransient flag on the input.
+            // Note that this does mean the value will change if the constructor changes!!!
+            // To allow serialiaztion, library implementors must register Types with the DefaultTypeInfoLibrary.
+            if (NewInput == null && paramInfo.HasDefaultValue && argInfo.argType.IsValueType ) {
+                Func<object>? UseConstructor = TypeUtils.FindParameterlessConstructorForType(argInfo.argType);
+                if (UseConstructor != null) {
+                    object defaultValue = UseConstructor();
+                    if (defaultValue != null) {
+                        NewInput = new StandardNodeInputBaseWithConstant(argInfo.argType, defaultValue);
+                        NewInput.Flags |= ENodeInputFlags.ConstantIsTransient;
+                    }
+                }
+            }
+
+            // if we get this far, fall back to standard input w/ no default
             if (NewInput == null) {
                 NewInput = new StandardNodeInputBase(argInfo.argType);
             }

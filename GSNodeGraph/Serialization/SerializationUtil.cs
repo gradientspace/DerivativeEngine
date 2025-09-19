@@ -40,6 +40,12 @@ namespace Gradientspace.NodeGraph
 			constant = new InputConstant();
 
 			INodeInput input = inputInfo.Input;
+
+            // if ConstantIsTransient flag is set, we cannot serialize the value
+            if (input.GetInputFlags().HasFlag(ENodeInputFlags.ConstantIsTransient))
+                return false;
+
+            // if there is no value, there is nothing to serialize
 			(object? constantValue, bool bIsDefined) = input.GetConstantValue();
 			if (bIsDefined == false || constantValue == null)
 				return false;
