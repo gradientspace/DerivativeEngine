@@ -1,10 +1,6 @@
 // Copyright Gradientspace Corp. All Rights Reserved.
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Gradientspace.NodeGraph
 {
@@ -196,7 +192,8 @@ namespace Gradientspace.NodeGraph
 
         public bool AddOutput()
         {
-            AddOutput(MakeOutputName(NumOutputs), new ControlFlowOutput(MakeOutputName(NumOutputs)));
+            int NextIdx = Outputs.Count;
+            AddOutput(MakeOutputName(NextIdx), new ControlFlowOutput(MakeOutputName(NextIdx)));
             NumOutputs = Outputs.Count;
             PublishNodeModifiedNotification();
             return true;
@@ -243,6 +240,28 @@ namespace Gradientspace.NodeGraph
             return (Outputs[CurrentIndex].Output as ControlFlowOutput)!;
         }
 
+
+        public const string NumOutputsKey = "NumOutputs";
+        public override void CollectCustomDataItems(out NodeCustomData? DataItems)
+        {
+            DataItems = new NodeCustomData()
+                .AddIntItem(NumOutputsKey, NumOutputs);
+        }
+        public override void RestoreCustomDataItems(NodeCustomData DataItems)
+        {
+            NumOutputs = DataItems.FindIntItemOrDefault(NumOutputsKey, 0);
+            updateInputsAndOutputs();
+        }
+
+        protected void updateInputsAndOutputs()
+        {
+            int WantOutputs = NumOutputs;
+            int CurNumOutputs = Outputs.Count;
+            while (Outputs.Count < WantOutputs)
+                AddOutput();
+            while (Outputs.Count > WantOutputs)
+                Outputs.RemoveAt(Outputs.Count-1);
+        }
 
     }
 
