@@ -23,6 +23,7 @@ namespace Gradientspace.NodeGraph.Geometry
         public override string Operand1Name => "XYZ";
         public override string Operand2Name => "W";
         public override string ValueOutputName => "Quat";
+        public override object? Operand2Default => 1.0;
         public override Quaterniond ComputeOp(ref readonly Vector3d A, ref readonly double B) { return new Quaterniond(A.x,A.y,A.z,B).Normalized; }
         protected override string CodeString(string A, string B, string Result) { return $"{Result} = new Quaterniond(({A}).x,(({A}).y,(({A}).z,({B})).Normalized"; }
     }
@@ -34,6 +35,7 @@ namespace Gradientspace.NodeGraph.Geometry
         public override string Operand1Name => "Axis";
         public override string Operand2Name => "Degrees";
         public override string ValueOutputName => "Quat";
+        public override object? Operand1Default => Vector3d.UnitZ;
         public override Quaterniond ComputeOp(ref readonly Vector3d A, ref readonly double B) { return Quaterniond.AxisAngleD(A, B); }
         protected override string CodeString(string A, string B, string Result) { return $"{Result} =  Quaterniond.AxisAngleD({A},{B})"; }
     }
