@@ -296,7 +296,9 @@ namespace Gradientspace.NodeGraph
 					{
                         LibraryFunctionNode funcNode = new LibraryFunctionNode(type, methodInfo, NodeName);
                         if (isNodeFunction.IsPure)
-                            funcNode.Flags = funcNode.Flags | ENodeFlags.IsPure;
+                            funcNode.Flags |= ENodeFlags.IsPure;
+                        if (isNodeFunction.Hidden)
+                            funcNode.Flags |= ENodeFlags.Hidden;
                         nodeArchetype = funcNode;
 					}
 					NodeType nodeType = new NodeType(functionNodeClassType, NodeName);
