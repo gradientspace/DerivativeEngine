@@ -10,6 +10,7 @@ namespace Gradientspace.NodeGraph
     {
         Type ValueType { get; set; }
         public ENodeInputFlags Flags { get; set; }
+        public string? DisplayName { get; set; } = null;
 
         public StandardNodeInputBase(Type valueType)
         {
