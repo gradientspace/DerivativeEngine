@@ -20,6 +20,7 @@ namespace Gradientspace.NodeGraph
 
             public bool SupportsInputConstant = false;
             public object? DefaultConstantValue = null;
+            public Func<NodeParameter, object?>? NodeParameterHandler = null;
 
             public DataTypeInfo(Type type) { dataType = type; }
 
@@ -46,7 +47,10 @@ namespace Gradientspace.NodeGraph
         }
 
 
-        public void RegisterType(Type dataType, bool bSupportsInputConstant, object? defaultConstantValue = null)
+        public void RegisterType(Type dataType, 
+            bool bSupportsInputConstant, 
+            object? defaultConstantValue = null,
+            Func<NodeParameter, object?>? nodeParameterHandler = null )
         {
             if (Library.ContainsKey(dataType))
                 throw new Exception($"TypeInfoLibrary already contains Type {dataType}!");
@@ -54,8 +58,10 @@ namespace Gradientspace.NodeGraph
             DataTypeInfo typeInfo = new DataTypeInfo(dataType);
             typeInfo.SupportsInputConstant = bSupportsInputConstant;
             typeInfo.DefaultConstantValue = defaultConstantValue;
+            typeInfo.NodeParameterHandler = nodeParameterHandler;
             Library.Add(dataType, typeInfo);
         }
+
 
 
         public bool TypeSupportsInputConstant(Type type)
@@ -66,10 +72,17 @@ namespace Gradientspace.NodeGraph
         }
 
 
-        public object? GetDefaultConstantValueForType(Type type)
+        public object? GetDefaultConstantValueForType(Type type, NodeParameter? nodeParamInfo = null)
         {
-            if (Library.TryGetValue(type, out DataTypeInfo typeInfo))
-                return typeInfo.DefaultConstantValue;
+            if (Library.TryGetValue(type, out DataTypeInfo typeInfo)) 
+            {
+                object? result = null;
+                if ( typeInfo.NodeParameterHandler != null && nodeParamInfo != null )
+                    result = typeInfo.NodeParameterHandler(nodeParamInfo);
+                if (result == null)
+                    result = typeInfo.DefaultConstantValue;
+                return result;
+            }
             return null;
         }
 
@@ -97,9 +110,9 @@ namespace Gradientspace.NodeGraph
             return Instance.TypeSupportsInputConstant(type);
         }
 
-        public static object? GetDefaultConstantValueForType(Type type)
+        public static object? GetDefaultConstantValueForType(Type type, NodeParameter? nodeParamInfo = null)
         {
-            return Instance.GetDefaultConstantValueForType(type);
+            return Instance.GetDefaultConstantValueForType(type, nodeParamInfo);
         }
 
     }
