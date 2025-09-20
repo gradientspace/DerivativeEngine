@@ -106,16 +106,37 @@ namespace Gradientspace.NodeGraph.Geometry
         public override string OpNamespace => "Geometry3.Vector3";
         public override string OpName => "Multiply";
         public override string OpString => "A * B";
+        public override object? Operand2Default => Vector3d.One;
         public override Vector3d ComputeOp(ref readonly Vector3d A, ref readonly Vector3d B) { return A * B; }
+        protected override string CodeString(string A, string B, string Result) { return $"{Result} = ({A}) * ({B})"; }
+    }
+    public class Vector3MultiplyScalarNode : StandardBinaryMathOpNode<Vector3d, double, Vector3d>
+    {
+        public override string OpNamespace => "Geometry3.Vector3";
+        public override string OpName => "Multiply";
+        public override string OpString => "A * s";
+        public override string Operand2Name => "s";
+        public override object? Operand2Default => 1.0;
+        public override Vector3d ComputeOp(ref readonly Vector3d A, ref readonly double B) { return A * B; }
         protected override string CodeString(string A, string B, string Result) { return $"{Result} = ({A}) * ({B})"; }
     }
     public class Vector3DivideNode : StandardBinaryMathOpNode<Vector3d, Vector3d, Vector3d>
     {
-        public override object? Operand2Default => Vector3d.One;
         public override string OpNamespace => "Geometry3.Vector3";
         public override string OpName => "Divide";
         public override string OpString => "A / B";
+        public override object? Operand2Default => Vector3d.One;
         public override Vector3d ComputeOp(ref readonly Vector3d A, ref readonly Vector3d B) { return A / B; }
+        protected override string CodeString(string A, string B, string Result) { return $"{Result} = ({A}) / ({B})"; }
+    }
+    public class Vector3DivideScalarNode : StandardBinaryMathOpNode<Vector3d, double, Vector3d>
+    {
+        public override string OpNamespace => "Geometry3.Vector3";
+        public override string OpName => "Divide";
+        public override string OpString => "A / s";
+        public override string Operand2Name => "s";
+        public override object? Operand2Default => 1.0;
+        public override Vector3d ComputeOp(ref readonly Vector3d A, ref readonly double B) { return A / B; }
         protected override string CodeString(string A, string B, string Result) { return $"{Result} = ({A}) / ({B})"; }
     }
     public class Vector3NegateNode : StandardUnaryMathOpNode<Vector3d, Vector3d>
@@ -144,6 +165,7 @@ namespace Gradientspace.NodeGraph.Geometry
         public override string OpNamespace => "Geometry3.Vector3";
         public override string OpName => "Dot";
         public override string OpString => "A . B";
+        public override object? Operand2Default => Vector3d.One;
         public override double ComputeOp(ref readonly Vector3d A, ref readonly Vector3d B) { return A.Dot(B); }
         protected override string CodeString(string A, string B, string Result) { return $"{Result} = ({A}).Dot({B})"; }
     }
@@ -152,6 +174,8 @@ namespace Gradientspace.NodeGraph.Geometry
         public override string OpNamespace => "Geometry3.Vector3";
         public override string OpName => "Cross";
         public override string OpString => "A x B";
+        public override object? Operand1Default => Vector3d.UnitX;
+        public override object? Operand2Default => Vector3d.UnitY;
         public override Vector3d ComputeOp(ref readonly Vector3d A, ref readonly Vector3d B) { return A.Cross(B); }
         protected override string CodeString(string A, string B, string Result) { return $"{Result} = ({A}).Cross({B})"; }
     }
@@ -160,6 +184,8 @@ namespace Gradientspace.NodeGraph.Geometry
         public override string OpNamespace => "Geometry3.Vector3";
         public override string OpName => "UnitCross";
         public override string OpString => "UnitCross";
+        public override object? Operand1Default => Vector3d.UnitX;
+        public override object? Operand2Default => Vector3d.UnitY;
         public override Vector3d ComputeOp(ref readonly Vector3d A, ref readonly Vector3d B) { return A.UnitCross(B); }
         protected override string CodeString(string A, string B, string Result) { return $"{Result} = ({A}).UnitCross({B})"; }
     }

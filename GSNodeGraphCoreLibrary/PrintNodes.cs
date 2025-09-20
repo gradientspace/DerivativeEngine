@@ -12,7 +12,7 @@ namespace Gradientspace.NodeGraph.Nodes
 	public static class GradientspaceIOFunctionLibrary
 	{
 
-		[NodeFunction]
+		[NodeFunction(Hidden=true)]
 		public static object? PrintValue(object? Value, string Format = "{0}")
 		{
 			object showValue = (Value != null) ? Value : "null";
@@ -22,6 +22,26 @@ namespace Gradientspace.NodeGraph.Nodes
 
 	}
 
+
+    [GraphNodeUIName("Print")]
+    public class PrintStringNode : StandardNode
+    {
+        public override string? GetNodeNamespace() { return "Core.IO"; }
+        public override string GetDefaultNodeName() { return "Print"; }
+
+        public static string InputName { get { return "String"; } }
+
+        public PrintStringNode()
+        {
+            AddInput(InputName, new StandardStringNodeInput("(string)") );
+        }
+
+        public override void Evaluate(EvaluationContext EvalContext, ref readonly NamedDataMap DataIn, NamedDataMap RequestedDataOut)
+        {
+            string StringValue = DataIn.FindStringValueOrDefault(InputName, "");
+            GlobalGraphOutput.AppendLine(StringValue, EGraphOutputType.User);
+        }
+    }
 
 
     [GraphNodeNamespace("Core.IO")]

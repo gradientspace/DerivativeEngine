@@ -92,6 +92,16 @@ namespace Gradientspace.NodeGraph.Geometry
         public override Vector2d ComputeOp(ref readonly Vector2d A, ref readonly Vector2d B) { return A * B; }
         protected override string CodeString(string A, string B, string Result) { return $"{Result} = ({A}) * ({B})"; }
     }
+    public class Vector2MultiplyScalarNode : StandardBinaryMathOpNode<Vector2d, double, Vector2d>
+    {
+        public override string OpNamespace => "Geometry3.Vector2";
+        public override string OpName => "Multiply";
+        public override string OpString => "A * s";
+        public override string Operand2Name => "s";
+        public override object? Operand2Default => 1.0;
+        public override Vector2d ComputeOp(ref readonly Vector2d A, ref readonly double B) { return A * B; }
+        protected override string CodeString(string A, string B, string Result) { return $"{Result} = ({A}) * ({B})"; }
+    }
     public class Vector2DivideNode : StandardBinaryMathOpNode<Vector2d, Vector2d, Vector2d>
     {
         public override object? Operand2Default => Vector2d.One;
@@ -99,6 +109,16 @@ namespace Gradientspace.NodeGraph.Geometry
         public override string OpName => "Divide";
         public override string OpString => "A / B";
         public override Vector2d ComputeOp(ref readonly Vector2d A, ref readonly Vector2d B) { return A / B; }
+        protected override string CodeString(string A, string B, string Result) { return $"{Result} = ({A}) / ({B})"; }
+    }
+    public class Vector2DivideScalarNode : StandardBinaryMathOpNode<Vector2d, double, Vector2d>
+    {
+        public override string OpNamespace => "Geometry3.Vector2";
+        public override string OpName => "Divide";
+        public override string OpString => "A / s";
+        public override string Operand2Name => "s";
+        public override object? Operand2Default => 1.0;
+        public override Vector2d ComputeOp(ref readonly Vector2d A, ref readonly double B) { return A / B; }
         protected override string CodeString(string A, string B, string Result) { return $"{Result} = ({A}) / ({B})"; }
     }
     public class Vector2NegateNode : StandardUnaryMathOpNode<Vector2d, Vector2d>
