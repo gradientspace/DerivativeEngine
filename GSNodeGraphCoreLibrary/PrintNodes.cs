@@ -11,7 +11,6 @@ namespace Gradientspace.NodeGraph.Nodes
 	[NodeFunctionLibrary("Core.IO")]
 	public static class GradientspaceIOFunctionLibrary
 	{
-
 		[NodeFunction(Hidden=true)]
 		public static object? PrintValue(object? Value, string Format = "{0}")
 		{
@@ -22,12 +21,10 @@ namespace Gradientspace.NodeGraph.Nodes
 
 	}
 
-
-    [GraphNodeUIName("Print")]
     public class PrintStringNode : StandardNode
     {
         public override string? GetNodeNamespace() { return "Core.IO"; }
-        public override string GetDefaultNodeName() { return "Print"; }
+        public override string GetDefaultNodeName() { return "PrintStr"; }
 
         public static string InputName { get { return "String"; } }
 
@@ -69,6 +66,21 @@ namespace Gradientspace.NodeGraph.Nodes
             GlobalGraphOutput.AppendLine(result, EGraphOutputType.User);
         }
     }
+
+
+
+    [GraphNodeNamespace("Core.IO")]
+    [GraphNodeUIName("PrintF")]
+    public class PrintWithCustomFormatNode : PrintWithFormatNode
+    {
+        public override string GetDefaultNodeName() { return "PrintF"; }
+        protected override void BuildStandardInputsOutputs()
+        {
+            base.BuildStandardInputsOutputs();
+            (Inputs[0].Input as StandardStringNodeInput)!.Flags &= ~ENodeInputFlags.IsNodeConstant;
+        }
+    }
+
 
 
 }
