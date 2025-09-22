@@ -28,6 +28,7 @@ namespace Gradientspace.NodeGraph
             public string NodeClassType { get; set; } = "";
             public string NodeClassVariant { get; set; } = "";
             public string Location { get; set; } = "";
+            public string Version { get; set; } = "1.0";
 
             public List<SerializationUtil.InputConstant> InputConstants { get; set; } = new List<SerializationUtil.InputConstant>();
 
@@ -98,6 +99,7 @@ namespace Gradientspace.NodeGraph
                 sni.NodeName = node.GetNodeName();
                 sni.NodeClassType = nodeType.ClassType.FullName!;
                 sni.NodeClassVariant = nodeType.Variant;
+                sni.Version = nodeType.Version.ToString();
 
                 if (options.LayoutProvider != null)
                     sni.Location = options.LayoutProvider.GetLocationStringForNode(InternalInfo.Identifier);
@@ -198,7 +200,8 @@ namespace Gradientspace.NodeGraph
             int MaxIdentifier = -1;
             foreach (GraphNode node in Serialized.Nodes)
             {
-                NodeType? FoundNodeType = DefaultNodeLibrary.Instance.FindNodeType(node.NodeClassType, node.NodeClassVariant);
+                NodeVersion UseVersion = NodeVersion.Parse(node.Version);
+                NodeType? FoundNodeType = DefaultNodeLibrary.Instance.FindNodeType(node.NodeClassType, node.NodeClassVariant, UseVersion);
 
                 // if node type could not be found, graph is broken. We will swap in a 
                 // MissingNodeErrorNode type node, which still won't work, but allows the node

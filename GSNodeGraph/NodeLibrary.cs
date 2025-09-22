@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using Gradientspace.NodeGraph.Util;
+using System.Numerics;
 
 namespace Gradientspace.NodeGraph
 {
@@ -23,7 +24,8 @@ namespace Gradientspace.NodeGraph
             public List<string>? MappedClassTypes = null;
             public List<string>? MappedVariants = null;
         }
-        public List<NodeTypeInfo> Library;
+        protected List<NodeTypeInfo> Library;
+        protected List<NodeType> OldVersions;
 
         // do these need to be accessed via Interlocked or some Atomic mechanism??
         bool IsLibraryBuilt = false;
@@ -33,8 +35,9 @@ namespace Gradientspace.NodeGraph
         public NodeLibrary(bool bLaunchAutoBackgroundBuild = false) 
         {
             Library = new List<NodeTypeInfo>();
+            OldVersions = new List<NodeType>();
 
-			if (bLaunchAutoBackgroundBuild)
+            if (bLaunchAutoBackgroundBuild)
 				begin_library_build();
         }
 
@@ -102,15 +105,18 @@ namespace Gradientspace.NodeGraph
 
         public virtual NodeType? FindNodeType(Type ClassType)
         {
-            return (ClassType.FullName != null) ? FindNodeType(ClassType.FullName!, "") : null;
+            return (ClassType.FullName != null) ? FindNodeType(ClassType.FullName!, "", NodeVersion.MostRecent) : null;
         }
 
-        public virtual NodeType? FindNodeType(string ClassName, string Variant)
+        public virtual NodeType? FindNodeType(string ClassName, string Variant, NodeVersion Version)
         {
             wait_for_library_build();
 
-			// todo this will become expensive and maybe we should construct some kind of dictionary/hash?
+            bool bIgnoreVersion = Version.IsMostRecent;
 
+            // todo this will become expensive and maybe we should construct some kind of dictionary/hash?
+
+            NodeType? found = null;
 			foreach (NodeTypeInfo info in Library)
             {
                 bool bClassTypeMatch = (info.nodeType.ClassType.FullName == ClassName);
@@ -118,25 +124,50 @@ namespace Gradientspace.NodeGraph
                     bClassTypeMatch = true;
                 if (!bClassTypeMatch) continue;
 
-                if (info.nodeType.Variant == Variant)
-                    return info.nodeType;
+                if (info.nodeType.Variant == Variant) {
+                    found = info.nodeType;
+                    break;
+                }
 
-                if (info.MappedVariants != null && info.MappedVariants.Contains(Variant))
-                    return info.nodeType;
+                if (info.MappedVariants != null && info.MappedVariants.Contains(Variant)) {
+                    found = info.nodeType;
+                    break;
+                }
             }
 
-            return null;
+            // try version resolution
+            if (found != null && bIgnoreVersion == false && found.Version != Version) 
+            {
+                bool bFoundVersion = false;
+                foreach (NodeType nodeType in OldVersions) {
+                    if (nodeType.Version == Version && nodeType.VersionOf == found) {
+                        found = nodeType;
+                        bFoundVersion = true;
+                    }
+                }
+                if (!bFoundVersion)
+                    GlobalGraphOutput.AppendError($"Version {Version} of Node {found.UIName} could not be located - current version is {found.Version}");
+            }
+
+            return found;
         }
 
 
 
 
 
+        protected List<(NodeType,string)> pending_version_resolution = new();
+        protected void mark_for_version_processing(NodeType nodeType, string versionOf)
+        {
+            lock(pending_version_resolution) {
+                pending_version_resolution.Add((nodeType,versionOf));
+            }
+        }
 
 
         protected virtual void begin_library_build()
         {
-            lock(lockObj) { 
+            lock (lockObj) { 
                 if (WaitForLibraryBuildTask != null || IsLibraryBuilt)
                     return;
 			    WaitForLibraryBuildTask = Task.Run(run_library_build);
@@ -158,6 +189,10 @@ namespace Gradientspace.NodeGraph
 		protected virtual void run_library_build()
         {
             Debug.Assert(Library.Count == 0);       // can only call once, for now...
+
+            Library = new List<NodeTypeInfo>();
+            OldVersions = new List<NodeType>();
+            pending_version_resolution = new();
 
             Type BaseNodeType = typeof(NodeBase);
 
@@ -205,6 +240,32 @@ namespace Gradientspace.NodeGraph
                     processLibraryType((type, Namespace));
 
             }//);
+
+            // process version-of tags
+            foreach ( (NodeType nodeType, string versionOf) in pending_version_resolution) 
+            {
+                NodeType? found = null;
+                if (nodeType.ClassType == typeof(LibraryFunctionNode)) {
+                    foreach (NodeTypeInfo info in Library) {
+                        if (info.nodeType == nodeType) 
+                            continue;
+                        if (info.nodeType.ClassType != typeof(LibraryFunctionNode))
+                            continue;
+                        if (info.nodeType.Variant == versionOf) {
+                            found = info.nodeType;
+                            break;
+                        }
+                    }
+                    if (found != null) {
+                        nodeType.VersionOf = found;
+                        OldVersions.Add(nodeType);
+                    } else
+                        GlobalGraphOutput.AppendError($"Specified version of {nodeType.UIName}.VersionOf = [{versionOf}] could not be not found");
+
+                } else {
+                    throw new NotImplementedException();        // not supporting on nodes yet
+                }
+            }
 
             watch.Stop();
 			GlobalGraphOutput.AppendLog($"[NodeLibrary.Build] Found {FoundNodeClasses} Node Classes, {FoundFunctionLibraries} Function Libraries with {FoundNodeFunctions} Functions in {watch.Elapsed.TotalSeconds}s");
@@ -277,8 +338,8 @@ namespace Gradientspace.NodeGraph
 			{
 				if (methodInfo.IsStatic == false) continue;
 
-                NodeFunction? isNodeFunction = methodInfo.GetCustomAttribute(typeof(NodeFunction)) as NodeFunction;
-				if (isNodeFunction == null) continue;
+                NodeFunction? nodeFunctionInfo = methodInfo.GetCustomAttribute(typeof(NodeFunction)) as NodeFunction;
+				if (nodeFunctionInfo == null) continue;
 
 				string NodeName = methodInfo.GetCustomAttribute<NodeFunctionUIName>()?.UIName ?? methodInfo.Name;
 
@@ -295,9 +356,9 @@ namespace Gradientspace.NodeGraph
 					//else
 					{
                         LibraryFunctionNode funcNode = new LibraryFunctionNode(type, methodInfo, NodeName);
-                        if (isNodeFunction.IsPure)
+                        if (nodeFunctionInfo.IsPure)
                             funcNode.Flags |= ENodeFlags.IsPure;
-                        if (isNodeFunction.Hidden)
+                        if (nodeFunctionInfo.Hidden)
                             funcNode.Flags |= ENodeFlags.Hidden;
                         nodeArchetype = funcNode;
 					}
@@ -306,7 +367,20 @@ namespace Gradientspace.NodeGraph
 					nodeType.UICategory = Namespace;
 					nodeType.Variant = Namespace + "." + methodInfo.Name;
                     nodeType.Flags = nodeArchetype.GetNodeFlags();
-					NodeTypeInfo nodeTypeInfo = new NodeTypeInfo(nodeType);
+
+                    if ( NodeVersion.ValidateVersion(nodeFunctionInfo.Version) == false ) {
+                        // Should we be trying to set some invalid version here?? Is it safe to fall back to default?
+                        GlobalGraphOutput.AppendError($"Invalid NodeFunction.Version value on {type.Namespace}.{type.Name}.{methodInfo.Name} - must be Major.Minor integers (eg 1.1)");
+                        nodeType.Version = NodeVersion.Default;
+                    } else {
+                        nodeType.Version = NodeVersion.Parse(nodeFunctionInfo.Version);
+                        if (nodeFunctionInfo.VersionOf != null) {
+                            mark_for_version_processing(nodeType, nodeFunctionInfo.VersionOf);
+                        } else
+                            GlobalGraphOutput.AppendError($"Missing VersionOf tag on {type.Namespace}.{type.Name}.{methodInfo.Name}");
+                    }
+
+                    NodeTypeInfo nodeTypeInfo = new NodeTypeInfo(nodeType);
 
 					// temporary code to correct an early error where LibraryFunctionNode was in the wrong namespace :(
 					//nodeTypeInfo.MappedClassTypes = new List<string>();
