@@ -9,6 +9,26 @@ namespace Gradientspace.NodeGraph
 {
     public class ExecutionGraphSerializer
     {
+
+        public struct VersionHeader
+        {
+            public const string GraphType_Execution = "ExecutionGraph";
+
+            public string Version { get; set; }
+            public string GraphType { get; set; }
+
+            public VersionHeader(string version, string graphType)
+            {
+                Version = version;
+                GraphType = graphType;
+            }
+
+            public static VersionHeader Current { get { return Version_1p0; } }
+
+            public static readonly VersionHeader Version_1p0 = new("1.0", GraphType_Execution);
+        }
+
+
         public struct AssemblyDependency
         {
             string AssemblyName { get; set; }
@@ -52,6 +72,8 @@ namespace Gradientspace.NodeGraph
 
         public class SerializedGraph
         {
+            public VersionHeader Header { get; set; } = VersionHeader.Current;
+
             public List<AssemblyDependency> Assemblies { get; set; } = new List<AssemblyDependency>();
             public List<GraphNode> Nodes { get; set; } = new List<GraphNode>();
             public List<Connection> DataConnections { get; set; } = new List<Connection>();
