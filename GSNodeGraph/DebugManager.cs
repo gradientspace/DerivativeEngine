@@ -12,6 +12,7 @@ namespace Gradientspace.NodeGraph
     public class DebugManager
     {
         public static bool GlobalEnableGraphDebugging = false;
+        public static int DebugDelayMS = 100;
 
         private static readonly DebugManager instance = new DebugManager();
         static DebugManager() { }
@@ -20,6 +21,11 @@ namespace Gradientspace.NodeGraph
 
 
         public bool IsDebugging { get; private set; } = false;
+
+        public bool EnableStepByStep { get; set; } = false;
+        public bool IsWaitingForStep => waiting_for_step;
+
+        protected bool waiting_for_step = false;
 
 
         public void BeginGraphExecutionDebugSession()
@@ -89,6 +95,24 @@ namespace Gradientspace.NodeGraph
 
 
 
+        public void WaitAfterNodeComplete()
+        {
+            if ( EnableStepByStep ) {
+                waiting_for_step = true;
+                while (waiting_for_step && EnableStepByStep)
+                    Thread.Sleep(25);
+
+            } else {
+                Thread.Sleep(DebugDelayMS);
+            }
+        }
+
+
+        public void SignalInteractiveStep()
+        {
+            if (EnableStepByStep)
+                waiting_for_step = false;
+        }
 
     }
 

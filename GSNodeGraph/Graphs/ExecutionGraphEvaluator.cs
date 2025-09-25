@@ -16,9 +16,7 @@ namespace Gradientspace.NodeGraph
         }
 
         public bool EnableDebugPrinting { get; set; } = false;
-        public bool EnableDebugging { get; 
-            set; 
-        } = false;
+        public bool EnableDebugging { get; set; } = false;
 
         public delegate void EvaluationErrorEvent(string Error, NodeBase? ErrorAtNode);
         public event EvaluationErrorEvent? OnEvaluationErrorEvent;
@@ -337,7 +335,7 @@ namespace Gradientspace.NodeGraph
             }
 
             if (EnableDebugging) {
-                Thread.Sleep(100);      // possibly DebugManager should be doing this...
+                DebugManager.Instance.WaitAfterNodeComplete();
                 DebugManager.Instance.PopActiveNode_Async(NextNodeHandle.Identifier);
             }
         }
