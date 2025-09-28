@@ -154,9 +154,14 @@ namespace Gradientspace.NodeGraph
             if (CounterOutputIndex == -1)
                 throw new Exception("ForLoopNode: IterationIndexName output not found");
 
-            int UseItemIndex = Math.Min(IterationCounter, IterationEnd-1);
-            RequestedDataOut.SetItemValue(CounterOutputIndex, UseItemIndex);
-            RequestedDataOut.SetItemValueChecked(IterationElementName, IterationItems![UseItemIndex]);
+            // Currently this is always called even if the enumerable was empty.
+            // In that case we do not want to do this work, but we do want to go on to
+            // set the output pins etc
+            if (IterationCounter != IterationEnd) {
+                int UseItemIndex = Math.Min(IterationCounter, IterationEnd-1);
+                RequestedDataOut.SetItemValue(CounterOutputIndex, UseItemIndex);
+                RequestedDataOut.SetItemValueChecked(IterationElementName, IterationItems![UseItemIndex]);
+            }
 
             bool bContinue = !DoneIterations;
             SetContinueIterationOutput(RequestedDataOut, bContinue);
