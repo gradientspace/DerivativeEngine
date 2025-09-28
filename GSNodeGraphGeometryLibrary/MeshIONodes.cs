@@ -17,9 +17,13 @@ namespace Gradientspace.NodeGraph.Geometry
         {
             DMesh3Builder builder = new DMesh3Builder();
             StandardMeshReader reader = new StandardMeshReader() { MeshBuilder = builder };
+            reader.warningEvent += (string s, object o) => {
+                GlobalGraphOutput.AppendLine("[ImportMesh] " + s, EGraphOutputType.Debug);
+            };
             ReadOptions options = ReadOptions.Defaults;
+            options.BaseFileName = System.IO.Path.GetFileName(Path);
             options.BaseFilePath = System.IO.Path.GetDirectoryName(Path);
-            IOReadResult result = reader.Read(Path, ReadOptions.Defaults);
+            IOReadResult result = reader.Read(Path, options);
             if (result.code == IOCode.Ok && builder.Meshes.Count > 0)
             {
                 DMesh3 Result = builder.Meshes[0];
@@ -56,9 +60,13 @@ namespace Gradientspace.NodeGraph.Geometry
         {
             DMesh3Builder builder = new DMesh3Builder();
             StandardMeshReader reader = new StandardMeshReader() { MeshBuilder = builder };
+            reader.warningEvent += (string s, object o) => {
+                GlobalGraphOutput.AppendLine("[ImportMeshes] " + s, EGraphOutputType.Debug);
+            };
             ReadOptions options = ReadOptions.Defaults;
+            options.BaseFileName = System.IO.Path.GetFileName(Path);
             options.BaseFilePath = System.IO.Path.GetDirectoryName(Path);
-            IOReadResult result = reader.Read(Path, ReadOptions.Defaults);
+            IOReadResult result = reader.Read(Path, options);
             return builder.Meshes;
         }
 
