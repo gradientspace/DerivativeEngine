@@ -113,6 +113,13 @@ namespace Gradientspace.NodeGraph
             return LibraryNodeType?.UICategory ?? base.GetNodeNamespace();
         }
 
+        public override void CollectDependencies(Action<Assembly> DependencyFunc)
+        {
+            base.CollectDependencies(DependencyFunc);
+            if (LibraryClass != null)
+                DependencyFunc(LibraryClass.Assembly);
+        }
+
 
         // ICodeGen interface
         public void GetCodeOutputNames(out string[]? OutputNames)

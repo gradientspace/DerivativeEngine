@@ -1,6 +1,7 @@
 // Copyright Gradientspace Corp. All Rights Reserved.
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 
@@ -253,7 +254,11 @@ namespace Gradientspace.NodeGraph
         public virtual void CollectCustomDataItems(out NodeCustomData? DataItems) { DataItems = null; }
         public virtual void RestoreCustomDataItems(NodeCustomData DataItems) { }
 
-
+        public virtual void CollectDependencies(Action<Assembly> DependencyFunc)
+        {
+            if (LibraryNodeType != null) 
+                DependencyFunc(LibraryNodeType.ClassType.Assembly);
+        }
 
 
 		public override string ToString()

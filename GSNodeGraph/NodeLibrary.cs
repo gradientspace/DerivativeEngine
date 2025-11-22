@@ -376,8 +376,9 @@ namespace Gradientspace.NodeGraph
                         nodeType.Version = NodeVersion.Parse(nodeFunctionInfo.Version);
                         if (nodeFunctionInfo.VersionOf != null) {
                             mark_for_version_processing(nodeType, nodeFunctionInfo.VersionOf);
-                        } else
-                            GlobalGraphOutput.AppendError($"Missing VersionOf tag on {type.Namespace}.{type.Name}.{methodInfo.Name}");
+                        } //else
+                            //GlobalGraphOutput.AppendError($"Missing VersionOf tag on {type.Namespace}.{type.Name}.{methodInfo.Name}");
+                            // this prints for every function that doesn't have VersionOf...clearly wrong, what was the intention here??
                     }
 
                     NodeTypeInfo nodeTypeInfo = new NodeTypeInfo(nodeType);
@@ -493,7 +494,7 @@ namespace Gradientspace.NodeGraph
 
     public sealed class DefaultNodeLibrary
     {
-        private static readonly NodeLibrary instance = new NodeLibrary(true);
+        private static NodeLibrary instance = new NodeLibrary(true);
 
         static DefaultNodeLibrary() { }
         private DefaultNodeLibrary() { }
@@ -502,6 +503,17 @@ namespace Gradientspace.NodeGraph
             get {
                 return instance;
             }
+        }
+
+
+        // todo really should support partial rebuild, or rebuild from a specific assembly...
+        public static void ForceFullRebuild(bool bWait = false)
+        {
+            instance = new NodeLibrary(false);
+            if (bWait)
+                instance.Build();
+            else
+                instance.BuildAsync();
         }
     }
 

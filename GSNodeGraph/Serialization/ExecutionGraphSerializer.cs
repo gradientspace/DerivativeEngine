@@ -1,9 +1,8 @@
 // Copyright Gradientspace Corp. All Rights Reserved.
 using System.Diagnostics;
-using System.Numerics;
-using System.Reflection.Metadata;
+using System.Reflection;
 using System.Text.Json;
-using System.Text.Json.Serialization;
+using Gradientspace.NodeGraph.Util;
 
 namespace Gradientspace.NodeGraph
 {
@@ -31,7 +30,9 @@ namespace Gradientspace.NodeGraph
 
         public struct AssemblyDependency
         {
-            string AssemblyName { get; set; }
+            public string AssemblyName { get; set; }
+            public string QualifiedName { get; set; }
+            public string DLLPath { get; set; }
         }
 
         public struct GraphNodeCustomData
@@ -102,7 +103,12 @@ namespace Gradientspace.NodeGraph
         {
             SerializedGraph Serialized = new SerializedGraph();
 
-            HashSet<int> SerializedNodeIDs = new HashSet<int>();
+            HashSet<Assembly> ReferencedAssemblies = new();
+            Action<Assembly> CollectAssembly = (Assembly assembly) => {
+                ReferencedAssemblies.Add(assembly);
+            };
+
+            HashSet<int> SerializedNodeIDs = new();
             foreach (INodeInfo nodeInfo in graph.EnumerateNodes())
             {
                 NodeHandle handle = new NodeHandle(nodeInfo.Identifier);
@@ -115,6 +121,8 @@ namespace Gradientspace.NodeGraph
 
                 NodeBase node = InternalInfo.Node;
                 NodeType nodeType = InternalInfo.nodeType;
+
+                node.CollectDependencies(CollectAssembly);
 
                 GraphNode sni = new();
                 sni.Identifier = InternalInfo.Identifier;
@@ -155,6 +163,22 @@ namespace Gradientspace.NodeGraph
                     continue;
 
                 Serialized.SequenceConnections.Add(new Connection(connectionInfo));
+            }
+
+
+            string ExecutablePath = AppDomain.CurrentDomain.BaseDirectory;
+            foreach (Assembly assembly in ReferencedAssemblies) {
+                string AssemblyPath = assembly.Location;
+                if (AssemblyPath.StartsWith(ExecutablePath, StringComparison.OrdinalIgnoreCase))
+                    AssemblyPath = Path.GetRelativePath(ExecutablePath, AssemblyPath);
+
+                // if assembly is in known-assembly folder, then can even strip off relative path...
+
+                Serialized.Assemblies.Add(new AssemblyDependency() {
+                    AssemblyName = assembly.GetName().Name!,
+                    QualifiedName = assembly.FullName!,
+                    DLLPath = AssemblyPath
+                });
             }
 
             JsonSerializerOptions jsonOptions = new JsonSerializerOptions();
@@ -215,6 +239,20 @@ namespace Gradientspace.NodeGraph
             SerializedGraph? Serialized = JsonSerializer.Deserialize<SerializedGraph>(utf8Stream);
             if (Serialized == null)
                 return false;
+
+            // try to load assemblies
+            bool bNewAssembliesLoaded = false;
+            foreach (AssemblyDependency assemblyDep in Serialized.Assemblies)
+            {
+                AssemblyUtils.EAssemblyLoadResult LoadResult 
+                    = AssemblyUtils.TryFindLoadAssembly(assemblyDep.QualifiedName, assemblyDep.DLLPath);
+                if ( LoadResult == AssemblyUtils.EAssemblyLoadResult.LoadedSuccessfully )
+                    bNewAssembliesLoaded = true;
+            }
+            if ( bNewAssembliesLoaded ) {
+                // if we loaded new assemblies, we need to refresh the node library
+                DefaultNodeLibrary.ForceFullRebuild();
+            }
 
             bool bNodeErrors = false;
             bool bConnectionErrors = false;

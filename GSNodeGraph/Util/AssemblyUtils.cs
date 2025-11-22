@@ -1,6 +1,8 @@
 ﻿// Copyright Gradientspace Corp. All Rights Reserved.
 using System;
 using System.Reflection;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 
 namespace Gradientspace.NodeGraph.Util
 {
@@ -49,6 +51,58 @@ namespace Gradientspace.NodeGraph.Util
             return true;
         }
 
+
+        public enum EAssemblyLoadResult
+        {
+            AlreadyLoaded,
+            LoadedSuccessfully,
+            FailedToLoad
+        }
+
+        public static EAssemblyLoadResult TryFindLoadAssembly(string QualifiedName, string DLLName)
+        {
+            Assembly? foundAssembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(asm => asm.FullName == QualifiedName);
+            if (foundAssembly != null)
+                return EAssemblyLoadResult.AlreadyLoaded;
+
+            try
+            {
+                Assembly.Load(QualifiedName);
+            }
+            catch (Exception)
+            {
+                try
+                {
+                    Assembly.LoadFrom(DLLName);
+                }
+                catch (Exception)
+                {
+                    GlobalGraphOutput.AppendError($"Failed to load assembly {QualifiedName} from {DLLName}");
+                    return EAssemblyLoadResult.FailedToLoad;
+                }
+            }
+
+            return EAssemblyLoadResult.LoadedSuccessfully;
+        }
+
+
+
+
+        public static bool IsDotNetAssembly(string dllPath)
+        {
+            try {
+                using (FileStream fileStream = new FileStream(dllPath, FileMode.Open, FileAccess.Read)) {
+                    using (PEReader peReader = new PEReader(fileStream)) {
+                        if (!peReader.HasMetadata) 
+                            return false; // Not a .NET assembly
+                        var metadataReader = peReader.GetMetadataReader();
+                        return metadataReader.IsAssembly; // True if it's a .NET assembly
+                    }
+                }
+            } catch {
+                return false;
+            }
+        }
 
     }
 }
