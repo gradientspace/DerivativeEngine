@@ -57,7 +57,7 @@ namespace Gradientspace.NodeGraph.Geometry
         public override string Operand1Name => "Frame";
         public override string Output1Name => "Origin";
         public override string Output2Name => "Rotation";
-        public override string OpString => "Normalize";
+        public override string OpString => "SplitFrame";
         public override (Vector3d, Quaterniond) ComputeOp(ref readonly Frame3d A) { return (A.Origin, A.Rotation); }
         protected override string CodeString(string A, string Result1, string Result2) { return $"{{ {Result1} = {A}.Origin; {Result2} = {A}.Rotation; }}"; }
     }

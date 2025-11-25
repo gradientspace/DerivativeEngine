@@ -18,7 +18,7 @@ namespace Gradientspace.NodeGraph.Geometry
             Vector3d[] result = new Vector3d[N];
             SphericalFibonacciPointSet PointSet = new SphericalFibonacciPointSet(N);
             for (int i = 0; i < N; ++i)
-                result[i] = PointSet[i];
+                result[i] = Origin + Radius * PointSet[i];
             return result;
         }
 

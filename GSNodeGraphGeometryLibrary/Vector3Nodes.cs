@@ -298,6 +298,16 @@ namespace Gradientspace.NodeGraph.Geometry
     }
 
 
+    public class Vector3DirectionToNode : StandardTrinaryMathOpNode<Vector3d, Vector3d, bool, Vector3d>
+    {
+        public override string OpNamespace => "Geometry3.Vector3";
+        public override string Operand3Name => "Normalized";
+        public override string OpName => "DirectionTo";
+        public override string OpString => "DirectionTo";
+        public override Vector3d ComputeOp(ref readonly Vector3d A, ref readonly Vector3d B, ref readonly bool C) { return (C) ? (B-A).Normalized : (B-A); }
+        protected override string CodeString(string A, string B, string C, string Result) { return $"{Result} = ({C}) ? ({B}-{A}).Normalized : ({B}-{A})"; }
+    }
+
     public class Vector3EpsEqualNode : StandardTrinaryMathOpNode<Vector3d, Vector3d, double, bool>
     {
         public override string OpNamespace => "Geometry3.Vector3";

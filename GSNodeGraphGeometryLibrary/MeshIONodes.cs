@@ -36,8 +36,8 @@ namespace Gradientspace.NodeGraph.Geometry
 
 
         [NodeFunction]
-        [NodeParameter("Path", DisplayName = "OutputPath", DefaultValue ="export.obj")]
-        public static void ExportMesh(string Path, DMesh3 Mesh)
+        [NodeParameter("Path", DisplayName = "Path", DefaultValue ="export.obj")]
+        public static void ExportMesh(ref DMesh3 Mesh, string Path)
         {
             if (Mesh == null) {
                 GlobalGraphOutput.AppendError("[ExportMesh] Mesh is null");

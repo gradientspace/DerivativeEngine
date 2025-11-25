@@ -16,6 +16,19 @@ namespace GSNodeGraphGeometryLibrary
     }
 
 
+    public class Ray3FromToNode : StandardBinaryMathOpNode<Vector3d, Vector3d, Ray3d>
+    {
+        public override string OpNamespace => "Geometry3.Ray3";
+        public override string Operand1Name => "A";
+        public override string Operand2Name => "B";
+        public override string OpName => "RayFromTo";
+        public override string OpString => "RayFromTo";
+        public override string ValueOutputName => "Ray";
+        public override Ray3d ComputeOp(ref readonly Vector3d A, ref readonly Vector3d B) { return new Ray3d(A, (B-A), false); }
+        protected override string CodeString(string A, string B, string Result) { return $"{Result} = new Ray3d({A},{B}-{A},false)"; }
+    }
+
+
     public class Ray3PointAtNode : StandardBinaryMathOpNode<Ray3d, double, Vector3d>
     {
         public override string OpNamespace => "Geometry3.Ray3";
