@@ -26,6 +26,7 @@ namespace Gradientspace.NodeGraph
 		
         public IVariablesInterface? ActiveVariables { get { return EvalVariables; } }
 
+        public bool PendingCancel = false;
 
 		int LastNumEvaluatedNodes = 0;
 
@@ -348,7 +349,13 @@ namespace Gradientspace.NodeGraph
             try {
                 if (EnableDebugging)
 					GlobalGraphOutput.AppendLine("Evaluating " + Node.GetNodeName(), EGraphOutputType.Logging);
+
+                // if we only allow cancel here, then FailedNode will be set in the abort to the node where cancel was clicked,
+                // which may be useful to the user. 
+                HandlePendingCancel();
                 Node.Evaluate(this.EvalContext!, in DataIn, RequestedDataOut);
+                HandlePendingCancel();
+
             } catch (Exception e) {
                 throw new EvaluationAbortedException(e.Message) { FailedNode = Node } ;
             }
@@ -860,6 +867,15 @@ namespace Gradientspace.NodeGraph
         public object? RecursiveComputeNodeOutputData(INodeInfo nodeInfo, string OutputName)
         {
 	        return RecursiveComputeNodeOutputData(new NodeHandle(nodeInfo.Identifier), OutputName);
+        }
+
+
+        public void HandlePendingCancel()
+        {
+            if (PendingCancel) {
+                PendingCancel = false;
+                throw new EvaluationAbortedException("Graph evaluation canceled");
+            }
         }
 
 
