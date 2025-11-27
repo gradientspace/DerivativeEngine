@@ -59,6 +59,15 @@ namespace Gradientspace.NodeGraph
         }
 
 
+        public static bool IsOfBaseClass<T>(object? o) where T : class
+        {
+            if (o == null) return false;
+            Type baset = typeof(T);
+            Type t = o.GetType();
+            return t == baset || t.IsSubclassOf(baset);
+        }
+
+
         // todo this should return a struct that includes (eg) info about whether there will be a conversion, etc
         public static bool CanConnectFromTo(Type FromType, Type ToType)
         {
