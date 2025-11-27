@@ -45,6 +45,11 @@ namespace Gradientspace.NodeGraph
         {
             return new GraphDataType(typeof(MissingInputOutputDataType));
         }
+
+        public virtual ENodeOutputFlags GetOutputFlags()
+        {
+            return ENodeOutputFlags.None;
+        }
     }
 
 }

@@ -10,6 +10,7 @@ namespace Gradientspace.NodeGraph
     public class StandardNodeOutputBase : INodeOutput
     {
         Type ValueType { get; set; }
+        public ENodeOutputFlags Flags { get; set; }
 
         public StandardNodeOutputBase(Type valueType)
         {
@@ -19,6 +20,11 @@ namespace Gradientspace.NodeGraph
         public virtual GraphDataType GetDataType()
         {
             return new GraphDataType(ValueType);
+        }
+
+        public virtual ENodeOutputFlags GetOutputFlags()
+        {
+            return Flags;
         }
     }
 
@@ -55,6 +61,11 @@ namespace Gradientspace.NodeGraph
         public virtual GraphDataType GetDataType()
         {
             return new GraphDataType(typeof(ControlFlowOutputID));
+        }
+
+        public virtual ENodeOutputFlags GetOutputFlags()
+        {
+            return ENodeOutputFlags.None;
         }
     }
 

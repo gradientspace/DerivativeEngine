@@ -118,7 +118,12 @@ namespace Gradientspace.NodeGraph.PythonNodes
 				  GraphDataType.MakeDynamic(CSharpType, EGraphDataFormat.Python, PyType, helper)
 				: new GraphDataType(CSharpType);
 		}
-	}
+
+        public virtual ENodeOutputFlags GetOutputFlags()
+        {
+            return ENodeOutputFlags.None;
+        }
+    }
 
 
 

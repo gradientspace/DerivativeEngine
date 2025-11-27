@@ -77,6 +77,7 @@ namespace Gradientspace.NodeGraph
 			return TypeInput.ConstantValue;
 		}
 
+        // note this is called on interactive change as well as restore-input-constant during graph load
 		private void TypeInput_ConstantTypeModifiedEvent(ClassTypeNodeInput input, Type newType)
 		{
 			updateInputsAndOutputs();
