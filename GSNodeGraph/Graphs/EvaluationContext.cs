@@ -17,9 +17,15 @@ namespace Gradientspace.NodeGraph
 		public object? GetVariable(string Name, string Scope = "");
 	}
 
+    public interface IAliasesInterface
+    {
+        public (NodeBase?,int,string) GetAliasSourceOutput(string AliasName);
+    }
+
 	public class EvaluationContext
 	{
 		public required IVariablesInterface Variables;
+        public required IAliasesInterface Aliases;
 	}
 
 
@@ -79,8 +85,52 @@ namespace Gradientspace.NodeGraph
 			throw new Exception($"[SetVariable] variable {Name} in Scope {Scope} not found");
 		}
 
-
-
 	}
+
+
+    public class StandardAliases : IAliasesInterface
+    {
+        public struct CreateAliasInfo
+        {
+            public string Name = "";
+            public CreateAliasNode? AliasNode = null;
+            public int SourceNodeIdentifier = -1;
+            public string SourceNodeOutputName = "";
+            public CreateAliasInfo() { }
+        }
+        protected Dictionary<string, CreateAliasInfo> AliasSet = new();
+
+        public StandardAliases(BaseGraph Graph)
+        {
+            Initialize(Graph);
+        }
+
+        protected void Initialize(BaseGraph Graph)
+        {
+            foreach ( CreateAliasNode createNode in Graph.EnumerateNodesOfType<CreateAliasNode>() ) 
+            {
+                CreateAliasInfo newInfo = new() {
+                    Name = createNode.GetAliasName(),
+                    AliasNode = createNode
+                };
+
+                IConnectionInfo connectionInfo = Graph.FindConnectionTo(createNode.GraphIdentifier, CreateAliasNode.ValueInputName, EConnectionType.Data);
+                if (connectionInfo.IsValid) {
+                    newInfo.SourceNodeIdentifier = connectionInfo.FromNodeIdentifier;
+                    newInfo.SourceNodeOutputName = connectionInfo.FromNodeOutputName;
+                }
+
+                AliasSet.Add(newInfo.Name, newInfo);
+            }
+        }
+
+
+        public virtual (NodeBase?,int, string) GetAliasSourceOutput(string AliasName)
+        {
+            if ( AliasSet.TryGetValue(AliasName, out CreateAliasInfo aliasInfo) )
+                return (aliasInfo.AliasNode, aliasInfo.SourceNodeIdentifier, aliasInfo.SourceNodeOutputName);
+            return (null, -1, "not found");
+        }
+    }
 
 }

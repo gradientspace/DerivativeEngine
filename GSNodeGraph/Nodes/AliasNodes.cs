@@ -92,6 +92,129 @@ namespace Gradientspace.NodeGraph
     }
 
 
+    [SystemNode]
+    [GraphNodeNamespace("Gradientspace.Core")]
+    public abstract class AliasNodeBase : NodeBase
+    {
+        public const string TypeInputName = "Type";
+        public const string NameInputName = "Name";
+        public const string ALIAS_NAME_UNDEFINED = "::unknown::";
 
+        protected ClassTypeNodeInput TypeInput;
+        protected StandardStringNodeInput? NameInput = null;
+
+        public AliasNodeBase()
+        {
+            Type initialType = typeof(object);
+            TypeInput = new ClassTypeNodeInput() { ConstantValue = initialType };
+            TypeInput.Flags |= ENodeInputFlags.IsNodeConstant;
+            TypeInput.Flags |= ENodeInputFlags.Hidden;
+            TypeInput.ConstantTypeModifiedEvent += TypeInput_ConstantTypeModifiedEvent;
+            AddInput(TypeInputName, TypeInput);
+
+            // todo handle call multiple times?
+            NameInput = new VariableNameNodeInput("(name)");
+            // variable name needs to be node-constant to allow for static analysis...
+            NameInput.Flags |= ENodeInputFlags.IsNodeConstant;
+            AddInput(NameInputName, NameInput);
+
+            // this is a special node...maybe need some other way to handle it?
+            Flags |= ENodeFlags.Hidden;
+            Flags |= ENodeFlags.IsPure;
+        }
+
+        public Type GetAliasDataType()
+        {
+            return TypeInput.ConstantValue;
+        }
+
+        public string GetAliasName()
+        {
+            return NameInput?.ConstantValue ?? ALIAS_NAME_UNDEFINED;
+        }
+
+        public virtual void Initialize(Type dataType, string initialName)
+        {
+            TypeInput.SetConstantValue(dataType);
+            NameInput?.SetConstantValue(initialName);
+        }
+
+
+        // note this is called on interactive change as well as restore-input-constant during graph load
+        private void TypeInput_ConstantTypeModifiedEvent(ClassTypeNodeInput input, Type newType)
+        {
+            initializeInputOutput();
+            PublishNodeModifiedNotification();
+        }
+
+        protected virtual void initializeInputOutput()
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+
+    [SystemNode]
+    [GraphNodeNamespace("Gradientspace.Core")]
+    public class CreateAliasNode : AliasNodeBase
+    {
+        public override string GetDefaultNodeName() { return "(Alias)"; }
+
+        public const string ValueInputName = "ValueIn";
+        INodeInput? ValueInput = null;
+
+        public CreateAliasNode() : base()
+        {
+        }
+
+        protected override void initializeInputOutput()
+        {
+            Type dataType = GetAliasDataType();
+            // we don't want default values available on aliases!
+            //INodeInput? newInput = FunctionNodeUtils.BuildInputNodeForType(dataType, null);
+            INodeInput? newInput = new StandardNodeInputBase(dataType);
+            if (ValueInput == null)
+                AddInput(ValueInputName, newInput);
+            else
+                ReplaceInput(ValueInputName, newInput);
+            ValueInput = newInput;
+
+            if (ValueInput is StandardNodeInputBase baseInput)
+                baseInput.Flags |= ENodeInputFlags.HiddenLabel;
+        }
+    }
+
+
+
+
+    [SystemNode]
+    [GraphNodeNamespace("Gradientspace.Core")]
+    public class GetAliasNode : AliasNodeBase
+    {
+        public override string GetDefaultNodeName() { return "Get Alias"; }
+
+        public const string ValueOutputName = "Value";
+        INodeOutput? ValueOutput = null;
+
+        public GetAliasNode() : base()
+        {
+            NameInput!.Flags |= ENodeInputFlags.Hidden;
+        }
+
+        public override string GetCustomNodeName()
+        {
+            return NameInput?.ConstantValue ?? "(get alias)";
+        }
+
+        protected override void initializeInputOutput()
+        {
+            Type dataType = GetAliasDataType();
+            Outputs.Clear();
+            ValueOutput = new StandardNodeOutputBase(dataType);
+            AddOutput(ValueOutputName, ValueOutput);
+            if (ValueOutput is StandardNodeOutputBase baseOutput)
+                baseOutput.Flags |= ENodeOutputFlags.HiddenLabel;
+        }
+    }
 
 }

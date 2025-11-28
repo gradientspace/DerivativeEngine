@@ -22,9 +22,11 @@ namespace Gradientspace.NodeGraph
         public event EvaluationErrorEvent? OnEvaluationErrorEvent;
 
         protected StandardVariables? EvalVariables = null;
+        protected StandardAliases? EvalAliases = null;
         protected EvaluationContext? EvalContext = null;
 		
         public IVariablesInterface? ActiveVariables { get { return EvalVariables; } }
+        public IAliasesInterface? ActiveAliases { get { return EvalAliases; } }
 
         public bool PendingCancel = false;
 
@@ -37,7 +39,8 @@ namespace Gradientspace.NodeGraph
             FunctionReturnsHack.Clear();
 
             EvalVariables = new StandardVariables();
-            EvalContext = new EvaluationContext() { Variables = this.EvalVariables };
+            EvalAliases = new StandardAliases(Graph);
+            EvalContext = new EvaluationContext() { Variables = this.EvalVariables, Aliases = this.EvalAliases };
 
             if (EnableDebugging)
                 DebugManager.Instance.BeginGraphExecutionDebugSession();
@@ -711,8 +714,24 @@ namespace Gradientspace.NodeGraph
 				bool bFoundInputType = Graph.GetInputTypeForNode(nodeHandle, InputName, out GraphDataType inputDataType);
                 Debug.Assert(bFoundInputType == true);
 
-				// only need this to handle complex conversions...could gate it on InputData.GetType() != inputDataType.DataType...
-				bool bFoundOutputType = Graph.GetOutputTypeForNode(FoundConnection.FromNode, FoundConnection.FromOutput, out GraphDataType outputDataType);
+                // For an Alias node, we want to remap to the source of the alias.
+                // Search in ActiveAliases cache to find the alias and rewrite the 'From'
+                // part of FoundConnection. Note that this means it's not a "real" Connection
+                // in the graph...hopefully that will not cause problems downstream!
+                NodeBase? FoundFromNode = Graph.FindNodeFromHandle(FoundConnection.FromNode);
+                if (FoundFromNode is GetAliasNode aliasNode) {
+                    if (EnableDebugging)
+                        DebugManager.Instance.MarkNodeTouchedThisFrame(aliasNode.GraphIdentifier);
+                    (NodeBase? createNode, int SourceNodeIdentifier, string SourceNodeOutputName) = ActiveAliases!.GetAliasSourceOutput(aliasNode.GetAliasName());
+                    if (EnableDebugging && createNode != null)
+                        DebugManager.Instance.MarkNodeTouchedThisFrame(createNode.GraphIdentifier);
+                    FoundConnection.FromNode = new NodeHandle(SourceNodeIdentifier);
+                    FoundConnection.FromOutput = SourceNodeOutputName;
+                }
+
+
+                // only need this to handle complex conversions...could gate it on InputData.GetType() != inputDataType.DataType...
+                bool bFoundOutputType = Graph.GetOutputTypeForNode(FoundConnection.FromNode, FoundConnection.FromOutput, out GraphDataType outputDataType);
 				Debug.Assert(bFoundOutputType == true);
 
 				// if we have already computed the node on the other side of the connection, it's data should be in the output-pin cache
@@ -743,7 +762,6 @@ namespace Gradientspace.NodeGraph
 
                 // If we have not already computed and cached that data, we can try to "pull" it. 
                 // This should only be done for nodes that do not require a sequence path though...currently no way to detect that
-
                 InputData = RecursiveComputeNodeOutputData(FoundConnection.FromNode, FoundConnection.FromOutput);
                 if (InputData == null)
                 {
@@ -819,6 +837,24 @@ namespace Gradientspace.NodeGraph
             // any nodes evaluated in this function are evaluated "with" a node-eval frame in the sequenece path
             if (EnableDebugging) 
                 DebugManager.Instance.MarkNodeTouchedThisFrame(TargetNodeHandle.Identifier);
+
+            // For an Alias node, we want to remap to the source of the alias.
+            // Rely on ActiveAliases cache to do this, and just overwrite the input
+            // parameters so we can continue transparently (hopefully!)
+            if (FoundNode is GetAliasNode aliasNode) 
+            {
+                throw new Exception("can this still happen?");
+                //(NodeBase? createNode, int SourceNodeIdentifier, string SourceNodeOutputName) = ActiveAliases!.GetAliasSourceOutput(aliasNode.GetAliasName());
+                //if (EnableDebugging && createNode != null)
+                //    DebugManager.Instance.MarkNodeTouchedThisFrame(createNode.GraphIdentifier);
+                //TargetNodeHandle = new NodeHandle(SourceNodeIdentifier);
+                //FoundNode = Graph.FindNodeFromHandle(TargetNodeHandle);
+                //if (FoundNode == null)
+                //    throw new EvaluationAbortedException($"RecursiveComputeNodeOutputData: could not find valid source for alias {aliasNode.GetAliasName()}") { FailedNode = createNode ?? aliasNode };
+                //if (EnableDebugging)
+                //    DebugManager.Instance.MarkNodeTouchedThisFrame(TargetNodeHandle.Identifier);
+                //OutputName = SourceNodeOutputName;
+            }
 
             // find the output pin on the node given it's OutputName. 
             INodeOutput? FoundOutput = null;
