@@ -1,9 +1,5 @@
 ﻿// Copyright Gradientspace Corp. All Rights Reserved.
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Gradientspace.NodeGraph
 {
@@ -116,6 +112,7 @@ namespace Gradientspace.NodeGraph
             NameInput = new VariableNameNodeInput("(name)");
             // variable name needs to be node-constant to allow for static analysis...
             NameInput.Flags |= ENodeInputFlags.IsNodeConstant;
+            NameInput.Flags |= ENodeInputFlags.HiddenLabel;
             AddInput(NameInputName, NameInput);
 
             // this is a special node...maybe need some other way to handle it?
@@ -158,7 +155,7 @@ namespace Gradientspace.NodeGraph
     [GraphNodeNamespace("Gradientspace.Core")]
     public class CreateAliasNode : AliasNodeBase
     {
-        public override string GetDefaultNodeName() { return "(Alias)"; }
+        public override string GetDefaultNodeName() { return "Create Alias"; }
 
         public const string ValueInputName = "ValueIn";
         INodeInput? ValueInput = null;
@@ -212,8 +209,6 @@ namespace Gradientspace.NodeGraph
             Outputs.Clear();
             ValueOutput = new StandardNodeOutputBase(dataType);
             AddOutput(ValueOutputName, ValueOutput);
-            if (ValueOutput is StandardNodeOutputBase baseOutput)
-                baseOutput.Flags |= ENodeOutputFlags.HiddenLabel;
         }
     }
 
