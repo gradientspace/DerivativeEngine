@@ -168,6 +168,9 @@ namespace Gradientspace.NodeGraph
 
             string ExecutablePath = AppDomain.CurrentDomain.BaseDirectory;
             foreach (Assembly assembly in ReferencedAssemblies) {
+                if (assembly.Location.Length == 0)
+                    continue;       // skip assemblies that don't have a DLL file - eg dynamically-generated assemblies
+
                 string AssemblyPath = assembly.Location;
                 if (AssemblyPath.StartsWith(ExecutablePath, StringComparison.OrdinalIgnoreCase))
                     AssemblyPath = Path.GetRelativePath(ExecutablePath, AssemblyPath);
