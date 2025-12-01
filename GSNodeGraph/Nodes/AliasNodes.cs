@@ -130,6 +130,10 @@ namespace Gradientspace.NodeGraph
             return NameInput?.ConstantValue ?? ALIAS_NAME_UNDEFINED;
         }
 
+        // IDefineVariableNode/IAccessVariableNode impl
+        public virtual string GetVariableNameInputName() { return NameInputName; }
+        public virtual string GetVariableName() { return GetAliasName(); }
+
         public virtual void Initialize(Type dataType, string initialName)
         {
             TypeInput.SetConstantValue(dataType);
@@ -153,7 +157,7 @@ namespace Gradientspace.NodeGraph
 
     [SystemNode]
     [GraphNodeNamespace("Gradientspace.Core")]
-    public class CreateAliasNode : AliasNodeBase
+    public class CreateAliasNode : AliasNodeBase, IDefineVariableNode
     {
         public override string GetDefaultNodeName() { return "Create Alias"; }
 
@@ -186,7 +190,7 @@ namespace Gradientspace.NodeGraph
 
     [SystemNode]
     [GraphNodeNamespace("Gradientspace.Core")]
-    public class GetAliasNode : AliasNodeBase
+    public class GetAliasNode : AliasNodeBase, IAccessVariableNode
     {
         public override string GetDefaultNodeName() { return "Get Alias"; }
 

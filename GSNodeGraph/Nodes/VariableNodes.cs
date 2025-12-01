@@ -14,15 +14,19 @@ namespace Gradientspace.NodeGraph
 	 * and access their names/types
 	 */
 	[SystemNode]
-	public abstract class DefineVariableBaseNode : NodeBase
-	{
+	public abstract class DefineVariableBaseNode : NodeBase, IDefineVariableNode
+    {
 		public const string NameInputName = "Name";
 		public const string VARIABLE_NAME_UNDEFINED = "::unknown::";
 
 		// subclasses must implement...
 		public abstract Type GetVariableType();
 
-		public virtual string GetVariableName()
+        public virtual string GetVariableNameInputName()
+        {
+            return NameInputName;
+        }
+        public virtual string GetVariableName()
 		{
 			return NameInput?.ConstantValue ?? VARIABLE_NAME_UNDEFINED;
 		}
@@ -156,8 +160,8 @@ namespace Gradientspace.NodeGraph
 	// base class for variable get/set nodes, that by default have
 	// constant Name and Type inputs
 	[SystemNode]
-	public abstract class AccessVariableNode : NodeBase
-	{
+	public abstract class AccessVariableNode : NodeBase, IAccessVariableNode
+    {
 		public const string NameInputName = "Name";
 		public const string TypeInputName = "Type";
 		public const string OutputName = "Value";
@@ -206,8 +210,11 @@ namespace Gradientspace.NodeGraph
             PublishNodeModifiedNotification();
         }
 
-
-		public virtual string GetVariableName()
+        public virtual string GetVariableNameInputName()
+        {
+            return NameInputName;
+        }
+        public virtual string GetVariableName()
 		{
 			return NameInput?.ConstantValue ?? DefineVariableBaseNode.VARIABLE_NAME_UNDEFINED;
 		}
