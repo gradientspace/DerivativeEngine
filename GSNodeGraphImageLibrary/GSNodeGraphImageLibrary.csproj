@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\geometry3Sharp\geometry3Sharp.csproj" />
+    <ProjectReference Include="..\GSNodeGraph\GSNodeGraph.csproj" />
+  </ItemGroup>
+
+
+    <!--- This will copy files to the output folder for this project and also any dependent project -->
+    <ItemGroup>
+	    <Content Include="samplefiles\gradient.png">
+		    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		    <TargetPath>gradient.png</TargetPath>
+	    </Content>
+    </ItemGroup>
+
+</Project>
