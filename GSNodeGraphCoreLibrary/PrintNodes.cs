@@ -83,4 +83,46 @@ namespace Gradientspace.NodeGraph.Nodes
 
 
 
+
+    [GraphNodeNamespace("Core.String")]
+    public class StringViewNode : NodeBase
+    {
+        public override string GetDefaultNodeName() { return "ViewString"; }
+
+        public const string StringInputName = "String";
+        public const string StringOutputName = "String";
+
+        public StringViewNode()
+        {
+            StandardNodeInputBase ImageInput = new StandardNodeInputBase(typeof(string));
+            AddInput(StringInputName, ImageInput);
+            ImageInput.Flags |= ENodeInputFlags.IsInOut;
+            ImageInput.Flags |= ENodeInputFlags.HiddenLabel;
+
+            StandardNodeOutputBase ImageOutput = new StandardNodeOutputBase(typeof(string));
+            AddOutput(StringOutputName, ImageOutput);
+            ImageOutput.Flags |= ENodeOutputFlags.HiddenLabel;
+        }
+
+        public delegate void StringViewUpdateEvent(string String);
+        public event StringViewUpdateEvent? OnStringUpdate;
+
+        public override void Evaluate(EvaluationContext EvalContext, ref readonly NamedDataMap DataIn, NamedDataMap RequestedDataOut)
+        {
+            int OutputIndex = RequestedDataOut.IndexOfItem(StringOutputName);
+            if (OutputIndex == -1)
+                throw new Exception($"{GetDefaultNodeName()}: output not found");
+
+            object? foundData = DataIn.FindItemValue(StringInputName);
+            if (foundData is string str) {
+                OnStringUpdate?.Invoke(str);
+                RequestedDataOut.SetItem(OutputIndex, StringOutputName, str);
+            } else
+                throw new Exception($"{GetDefaultNodeName()}: input string not found");
+        }
+
+    }
+
+
+
 }

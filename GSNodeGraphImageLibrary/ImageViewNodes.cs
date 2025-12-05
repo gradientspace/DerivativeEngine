@@ -8,26 +8,6 @@ using System.Threading.Tasks;
 
 namespace Gradientspace.NodeGraph.Image
 {
-    public class PixelImage
-    {
-        public byte[]? data;
-    }
-
-
-    [NodeFunctionLibrary("Geometry3.Image")]
-    [MappedFunctionLibraryName("Geometry3.Image")]
-    public static class ImageIOFunctions
-    {
-        [NodeFunction]
-        public static PixelImage LoadImage(string Path = "gradient.png")
-        {
-            PixelImage image = new PixelImage();
-            image.data = File.ReadAllBytes(Path);
-            return image;
-        }
-    }
-
-
     public class ImageViewNode : NodeBase
     {
         public override string GetDefaultNodeName() { return "ViewImage"; }
@@ -47,7 +27,7 @@ namespace Gradientspace.NodeGraph.Image
             ImageOutput.Flags |= ENodeOutputFlags.HiddenLabel;
         }
 
-        public delegate void ImageViewUpdateEvent(ReadOnlySpan<byte> ImageBytes);
+        public delegate void ImageViewUpdateEvent(PixelImage Image);
         public event ImageViewUpdateEvent? OnImageUpdate;
 
         public override void Evaluate(EvaluationContext EvalContext, ref readonly NamedDataMap DataIn, NamedDataMap RequestedDataOut)
@@ -57,9 +37,9 @@ namespace Gradientspace.NodeGraph.Image
                 throw new Exception($"{GetDefaultNodeName()}: output not found");
 
             object? foundData = DataIn.FindItemValue(ImageInputName);
-            if (foundData is PixelImage image && image.data != null) {
+            if (foundData is PixelImage image && image.IsValid) {
 
-                OnImageUpdate?.Invoke(image.data.AsSpan<byte>());
+                OnImageUpdate?.Invoke(image);
                 RequestedDataOut.SetItem(OutputIndex, ImageOutputName, image);
 
             } else

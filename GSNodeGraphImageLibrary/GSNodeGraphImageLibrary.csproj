@@ -11,8 +11,11 @@
     <ProjectReference Include="..\GSNodeGraph\GSNodeGraph.csproj" />
   </ItemGroup>
 
+	<ItemGroup>
+		<PackageReference Include="SkiaSharp" Version="2.88.8" />
+	</ItemGroup>
 
-    <!--- This will copy files to the output folder for this project and also any dependent project -->
+	<!--- This will copy files to the output folder for this project and also any dependent project -->
     <ItemGroup>
 	    <Content Include="samplefiles\gradient.png">
 		    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
