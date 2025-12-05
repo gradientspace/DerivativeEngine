@@ -49,7 +49,7 @@ namespace Gradientspace.NodeGraph
 
 
 
-    [GraphNodeNamespace("Gradientspace.ControlFlow")]
+    [GraphNodeNamespace("Core.ControlFlow")]
     public class ForEachPlaceholderNode : EnumerablePlaceholderNodeBase
     {
         public override string GetDefaultNodeName() { return "For Each"; }
@@ -68,7 +68,7 @@ namespace Gradientspace.NodeGraph
 
 
     [SystemNode]
-    [GraphNodeNamespace("Gradientspace.ControlFlow")]
+    [GraphNodeNamespace("Core.ControlFlow")]
     public class ForEachEnumerableNode : IterationNode
     {
         public static string EnumerableInputName { get { return "Enumeration"; } }

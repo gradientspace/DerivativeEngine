@@ -46,7 +46,7 @@ namespace Gradientspace.NodeGraph
 	}
 
 
-	[GraphNodeNamespace("Gradientspace.Core")]
+	[GraphNodeNamespace("Core.Variables")]
 	[GraphNodeUIName("New Global Variable")]
 	public class CreateGlobalVariableNode : DefineVariableBaseNode
 	{
@@ -285,7 +285,7 @@ namespace Gradientspace.NodeGraph
 
 
 
-	[GraphNodeNamespace("Gradientspace.Core")]
+	[GraphNodeNamespace("Core.Variables")]
 	[GraphNodeUIName("Set Global Variable")]
 	public class SetGlobalVariableNode : AccessVariableNode
 	{
@@ -337,7 +337,7 @@ namespace Gradientspace.NodeGraph
 
 
 
-	[GraphNodeNamespace("Gradientspace.Core")]
+	[GraphNodeNamespace("Core.Variables")]
 	[GraphNodeUIName("Get Global Variable")]
 	public class GetGlobalVariableNode : AccessVariableNode
 	{

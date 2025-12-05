@@ -10,7 +10,7 @@ using Python.Runtime;
 
 namespace Gradientspace.NodeGraph.PythonNodes
 {
-    [GraphNodeNamespace("Gradientspace.Python")]
+    [GraphNodeNamespace("Core.Python")]
     public class CreatePythonTupleNode : StandardNode, INode_VariableInputs, INode_DynamicOutputs
 	{
         public static string ElementBaseName { get { return "Input"; } }

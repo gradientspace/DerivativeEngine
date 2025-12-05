@@ -12,7 +12,7 @@ namespace Gradientspace.NodeGraph
 
     // not clear that we want to support this...
 //#if false
-    [GraphNodeNamespace("Gradientspace.Core")]
+    [GraphNodeNamespace("Core.Object")]
     public class CreateObjectNode : NodeBase
     {
         public override string GetDefaultNodeName() { return "Create Object"; }

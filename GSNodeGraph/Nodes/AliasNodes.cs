@@ -11,7 +11,7 @@ namespace Gradientspace.NodeGraph
     /// (may revisit in future)
     /// </summary>
     [SystemNode]
-    [GraphNodeNamespace("Gradientspace.Core")]
+    [GraphNodeNamespace("Core.Variables")]
     public class RerouteNode : NodeBase
     {
         public override string GetDefaultNodeName() { return "(Reroute)"; }
@@ -89,7 +89,7 @@ namespace Gradientspace.NodeGraph
 
 
     [SystemNode]
-    [GraphNodeNamespace("Gradientspace.Core")]
+    [GraphNodeNamespace("Core.Variables")]
     public abstract class AliasNodeBase : NodeBase
     {
         public const string TypeInputName = "Type";
@@ -156,7 +156,7 @@ namespace Gradientspace.NodeGraph
 
 
     [SystemNode]
-    [GraphNodeNamespace("Gradientspace.Core")]
+    [GraphNodeNamespace("Core.Variables")]
     public class CreateAliasNode : AliasNodeBase, IDefineVariableNode
     {
         public override string GetDefaultNodeName() { return "Create Alias"; }
@@ -189,7 +189,7 @@ namespace Gradientspace.NodeGraph
 
 
     [SystemNode]
-    [GraphNodeNamespace("Gradientspace.Core")]
+    [GraphNodeNamespace("Core.Variables")]
     public class GetAliasNode : AliasNodeBase, IAccessVariableNode
     {
         public override string GetDefaultNodeName() { return "Get Alias"; }

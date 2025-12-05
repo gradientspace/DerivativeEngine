@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace Gradientspace.NodeGraph
 {
 
-    [GraphNodeNamespace("Gradientspace.List")]
+    [GraphNodeNamespace("Core.List")]
     public class CreateListNode : NodeBase
     {
         public override string GetDefaultNodeName() { return "Create List"; }
