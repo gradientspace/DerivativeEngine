@@ -114,10 +114,6 @@ namespace Gradientspace.NodeGraph
             {
                 NewNodeObj = (NodeType.NodeArchetype as LibraryFunctionNode)!.MakeInstance();
             }
-            else if (NodeType.NodeArchetype != null && NodeType.NodeArchetype.GetType() == typeof(LibraryFunctionSinkNode))
-            {
-                NewNodeObj = (NodeType.NodeArchetype as LibraryFunctionSinkNode)!.MakeInstance();
-            }
             else
             {
                 NewNodeObj = Activator.CreateInstance(NodeClassType);

@@ -862,8 +862,9 @@ namespace Gradientspace.NodeGraph
             List<string> Outputs = new List<string>();
             if (OutputName.Length == 0)
             {
-                if (FoundNode.GetType().IsSubclassOf(typeof(SinkNode)) == false)
-                    throw new Exception("RecursiveComputeNodeOutputData: no valid output name provided but Node is not a SinkNode");
+                throw new Exception("this path is broken (or no longer needed)");
+                //if (FoundNode.GetType().IsSubclassOf(typeof(SinkNode)) == false)
+                //    throw new Exception("RecursiveComputeNodeOutputData: no valid output name provided but Node is not a SinkNode");
             }
             else
             {

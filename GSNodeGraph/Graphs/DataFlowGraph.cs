@@ -23,8 +23,9 @@ namespace Gradientspace.NodeGraph
             List<string> Outputs = new List<string>();
             if ( OutputName.Length == 0 )
             {
-                if (FoundNode.GetType().IsSubclassOf(typeof(SinkNode)) == false)
-                    throw new Exception("ComputeNodeOutputData: no valid output name provided but Node is not a SinkNode");
+                throw new Exception("this path is broken...");
+                //if (FoundNode.GetType().IsSubclassOf(typeof(SinkNode)) == false)
+                //    throw new Exception("ComputeNodeOutputData: no valid output name provided but Node is not a SinkNode");
             }
             else
             {

@@ -30,10 +30,11 @@ namespace Gradientspace.NodeGraph
             {
                 Type nodeType = nodeInfo.Node!.GetType();
 
-                if ( nodeType.IsSubclassOf( typeof(SinkNode) ) )
-                {
-                    SinkNodes.Add(nodeInfo);
-                }
+                // [RMS] SinkNode base class was removed. Need to do this some other way.
+                //if ( nodeType.IsSubclassOf( typeof(SinkNode) ) )
+                //{
+                //    SinkNodes.Add(nodeInfo);
+                //}
             }
 
             foreach (INodeInfo nodeInfo in SinkNodes)
