@@ -21,6 +21,12 @@ namespace Gradientspace.NodeGraph
 
         public SourceCodeDataType() { }
 
+        public SourceCodeDataType(string codeText, Language codeLanguage)
+        {
+            CodeText = codeText;
+            CodeLanguage = codeLanguage;
+        }
+
         public SourceCodeDataType MakeDuplicate()
         {
             return new SourceCodeDataType() { CodeText = this.CodeText, CodeLanguage = this.CodeLanguage };
