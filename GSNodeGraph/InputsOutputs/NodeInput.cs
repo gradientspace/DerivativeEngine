@@ -138,4 +138,12 @@ namespace Gradientspace.NodeGraph
     }
 
 
+    // this is a special type so we can identify it in input pin and make a multiline text box
+    public class TextBlockNodeInput : StandardStringNodeInput
+    {
+        public TextBlockNodeInput(string initialValue = "") : base(initialValue) { }
+
+        public int UIWidthHint { get; set; } = -1;
+    }
+
 }
