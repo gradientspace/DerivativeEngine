@@ -84,6 +84,50 @@ namespace Gradientspace.NodeGraph.Nodes
 
 
 
+    // TextBlock node is a variant of StringConstantNode that provides a multiline text block input
+    // This probably doesn't strictly need it's own node, but it makes things simpler...
+    [GraphNodeNamespace("Core.Constants")]
+    [GraphNodeUIName("textblock")]
+    public class TextBlockConstantNode : StandardNode, ICodeGen
+    {
+        public override string GetDefaultNodeName() { return "textblock"; }
+
+        public TextBlockConstantNode()
+        {
+            this.Flags = ENodeFlags.IsPure;
+            AddOutput(ValueOutputName, new StandardNodeOutput<string>());
+            TextBlockNodeInput input = new TextBlockNodeInput();
+            input.UIWidthHint = 250;
+            input.Flags = ENodeInputFlags.IsNodeConstant | ENodeInputFlags.HiddenLabel;
+            AddInput(ValueInputName, input);
+        }
+
+        public static string ValueOutputName { get { return "String"; } }
+        public static string ValueInputName { get { return "String"; } }
+
+        public override void Evaluate(
+            ref readonly NamedDataMap DataIn,
+            NamedDataMap RequestedDataOut)
+        {
+            int OutputIndex = RequestedDataOut.IndexOfItem(ValueOutputName);
+            if (OutputIndex == -1)
+                throw new Exception("TextBlockConstantNode: output not found");
+            string Result = "";
+            DataIn.FindItemValueStrict<string>(ValueInputName, ref Result);
+            RequestedDataOut.SetItemValue(OutputIndex, Result);
+        }
+
+        public void GetCodeOutputNames(out string[]? OutputNames)
+        {
+            OutputNames = ["Str"];
+        }
+        public string GenerateCode(string[]? Arguments, string[]? UseOutputNames)
+        {
+            CodeGenUtils.CheckArgsAndOutputs(Arguments, 1, UseOutputNames, 1, "TextBlockConstantNode");
+            return $"string {UseOutputNames![0]} = {Arguments![0]};";
+        }
+    }
+
 
 
 
