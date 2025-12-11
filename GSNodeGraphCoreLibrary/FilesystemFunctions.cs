@@ -65,7 +65,7 @@ namespace Gradientspace.NodeGraph
         }
 
         [NodeFunction(IsPure = true)]
-        public static string DirSeparator(string Path)
+        public static string DirSeparator()
         {
             return System.IO.Path.DirectorySeparatorChar.ToString();
         }
