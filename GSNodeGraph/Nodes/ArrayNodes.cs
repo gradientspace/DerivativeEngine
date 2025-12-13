@@ -1,5 +1,6 @@
 // Copyright Gradientspace Corp. All Rights Reserved.
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -93,7 +94,9 @@ namespace Gradientspace.NodeGraph
             Inputs.Clear();
             Outputs.Clear();
 
-            AddInput(ArrayInputOutputName, new StandardNodeInputBase(ArrayType));
+            StandardNodeInputBase ArrayInput = new StandardNodeInputBase(ArrayType);
+            ArrayInput.Flags |= ENodeInputFlags.IsInOut;
+            AddInput(ArrayInputOutputName, ArrayInput);
             AddOutput(ArrayInputOutputName, new StandardNodeOutputBase(ArrayType));
 
             if (bEnableIndexInput)
@@ -256,6 +259,113 @@ namespace Gradientspace.NodeGraph
 
 
 
+    [GraphNodeNamespace("Core.Array")]
+    public class ArrayToStringPlaceholderNode : ArrayAccessPlaceholderNodeBase
+    {
+        public override string GetDefaultNodeName() { return "Array To String"; }
+
+        protected override void GetReplacementInfo(
+            out Type ReplacementNodeType, out string ReplacementInputName,
+            out Action<INode, GraphDataType>? ReplacementNodeInitializer)
+        {
+            ReplacementNodeType = typeof(ArrayToStringNode);
+            ReplacementInputName = ArrayToStringNode.ArrayInputOutputName;
+            ReplacementNodeInitializer = (INode newNode, GraphDataType incomingType) => {
+                (newNode as ArrayToStringNode)?.Initialize(incomingType.CSType);
+            };
+        }
+    }
+
+    [SystemNode]
+    public class ArrayToStringNode : ArrayElementNodeBase
+    {
+        public const string StringOutputName = "String";
+        public override string GetDefaultNodeName() { return "Array To String"; }
+
+        public const string IndicesInputName = "Indices";
+        protected StandardNodeInputWithConstant<bool> IndicesInput;
+
+        public ArrayToStringNode() { 
+            bEnableIndexInput = false;
+            IndicesInput = new StandardNodeInputWithConstant<bool>(false);
+            IndicesInput.Flags |= ENodeInputFlags.IsNodeConstant;
+        }
+
+        protected override void UpdateElementField()
+        {
+            AddInput(IndicesInputName, IndicesInput);
+            AddOutput(StringOutputName, new StandardNodeOutput<string>());
+        }
+
+        protected override void EvaluateInternal(ref readonly NamedDataMap DataIn, NamedDataMap RequestedDataOut, Array ArrayIn, int Index)
+        {
+            bool bIndices = DataIn.FindStructValueOrDefault<bool>(IndicesInputName, false, false);
+
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.Append('[');
+            for ( int i = 0; i < ArrayIn.Length; ++i) {
+                if (bIndices)
+                    stringBuilder.Append($"{i}:");
+                stringBuilder.Append(ArrayIn.GetValue(i)?.ToString() ?? "(null)");
+                if ( i < ArrayIn.Length - 1 )
+                    stringBuilder.Append(",");
+            }
+            stringBuilder.Append(']');
+
+            RequestedDataOut.SetItemValueChecked(StringOutputName, stringBuilder.ToString());
+        }
+    }
+
+
+
+
+    [GraphNodeNamespace("Core.Array")]
+    public class ArrayToListPlaceholderNode : ArrayAccessPlaceholderNodeBase
+    {
+        public override string GetDefaultNodeName() { return "Array To List"; }
+
+        protected override void GetReplacementInfo(
+            out Type ReplacementNodeType, out string ReplacementInputName,
+            out Action<INode, GraphDataType>? ReplacementNodeInitializer)
+        {
+            ReplacementNodeType = typeof(ArrayToListNode);
+            ReplacementInputName = ArrayToListNode.ArrayInputOutputName;
+            ReplacementNodeInitializer = (INode newNode, GraphDataType incomingType) => {
+                (newNode as ArrayToListNode)?.Initialize(incomingType.CSType);
+            };
+        }
+    }
+
+    [SystemNode]
+    public class ArrayToListNode : ArrayElementNodeBase
+    {
+        public const string ListOutputName = "List";
+        public override string GetDefaultNodeName() { return "Array To List"; }
+
+        public ArrayToListNode() { 
+            bEnableIndexInput = false;
+        }
+
+        protected override void UpdateElementField()
+        {
+            Type genericListType = typeof(List<>).MakeGenericType(ArrayElementType);
+            AddOutput(ListOutputName, new StandardNodeOutputBase(genericListType));
+        }
+
+        protected override void EvaluateInternal(ref readonly NamedDataMap DataIn, NamedDataMap RequestedDataOut, Array ArrayIn, int Index)
+        {
+            Type genericListType = typeof(List<>).MakeGenericType(ArrayElementType);
+            IList? newList = (IList?)Activator.CreateInstance(genericListType);
+            for (int i = 0; i < ArrayIn.Length; ++i)
+                newList!.Add(ArrayIn.GetValue(i));
+            RequestedDataOut.SetItemValueChecked(ListOutputName, newList!);
+        }
+    }
+
+
+
+
+
 
     [GraphNodeNamespace("Core.Array")]
 	[GraphNodeUIName("Make Array")]
@@ -399,6 +509,101 @@ namespace Gradientspace.NodeGraph
             updateInputsAndOutputs();
 		}
 
+	}
+
+
+
+
+
+    [GraphNodeNamespace("Core.Array")]
+	[GraphNodeUIName("Alloc Array")]
+	public class AllocateArrayNode : NodeBase
+	{
+        public override string GetDefaultNodeName() { return "Alloc Array"; }
+
+		public const string TypeInputName = "Type";
+        public const string NumInputName = "Num";
+		public const string AllocateObjectsInputName = "Alloc Objects";
+		public const string ArrayOutputName = "Array";
+
+		ClassTypeNodeInput TypeInput;
+        StandardNodeInputWithConstant<int> NumInput;
+        StandardNodeInputWithConstant<bool>? AllocateObjectsInput;
+        Type ActiveArrayType;
+
+        public AllocateArrayNode()
+        {
+            ActiveArrayType = typeof(object[]);
+
+            TypeInput = new ClassTypeNodeInput();
+            TypeInput.Flags |= ENodeInputFlags.IsNodeConstant;
+            TypeInput.ConstantTypeModifiedEvent += TypeInput_ConstantTypeModifiedEvent;
+            AddInput(TypeInputName, TypeInput);
+
+            NumInput = new(1);
+            AddInput(NumInputName, NumInput);
+
+            updateInputsAndOutputs();
+        }
+
+		private void TypeInput_ConstantTypeModifiedEvent(ClassTypeNodeInput input, Type newType)
+        {
+            updateInputsAndOutputs();
+            PublishNodeModifiedNotification();
+        }
+
+
+		protected virtual void updateInputsAndOutputs()
+        {
+			Type elementType = TypeInput.ConstantValue;
+            bool bShowMakeDefaultsToggle = TypeUtils.IsNullableType(elementType)
+                && (TypeUtils.FindParameterlessConstructorForType(elementType) != null);
+
+            // add or remove make-defaults toggle
+            if (bShowMakeDefaultsToggle == false && AllocateObjectsInput != null) {
+                Inputs.RemoveAt(2);     // should always be at this slot
+                AllocateObjectsInput = null;
+            }
+            if ( bShowMakeDefaultsToggle == true && AllocateObjectsInput == null )
+            {
+				AllocateObjectsInput = new StandardNodeInputWithConstant<bool>(false);
+                AllocateObjectsInput.Flags |= ENodeInputFlags.IsNodeConstant;
+				AddInput(AllocateObjectsInputName, AllocateObjectsInput);
+			}
+
+            // rebuild output
+			Outputs.Clear();
+            ActiveArrayType = elementType.MakeArrayType();
+            AddOutput(ArrayOutputName, new StandardNodeOutputBase(ActiveArrayType));
+        }
+
+
+        public override void Evaluate(ref readonly NamedDataMap DataIn, NamedDataMap RequestedDataOut)
+        {
+            Type elementType = TypeInput.ConstantValue;
+			Func<object>? UseConstructor = TypeUtils.FindParameterlessConstructorForType(elementType);
+
+            int NumToAlloc = 0;
+            DataIn.FindItemValueStrict(NumInputName, ref NumToAlloc);
+
+            // create output array
+			object? newObject = Activator.CreateInstance(ActiveArrayType, new object[] { NumToAlloc });
+            if (newObject == null)
+                throw new Exception("AllocateArrayNode: could not create new array of type " + TypeUtils.TypeToString(ActiveArrayType));
+            Array newArray = (Array)newObject;
+
+            // populate output array from input pins
+            bool bCreateDefaults = (AllocateObjectsInput != null) ? AllocateObjectsInput.ConstantValue : true;
+			for (int i = 0; i < NumToAlloc; ++i)
+			{
+                if (UseConstructor != null && bCreateDefaults)
+                {
+                    newArray.SetValue(UseConstructor(), i);
+                }
+			}
+
+            RequestedDataOut.SetItemValueChecked(ArrayOutputName, newArray);
+        }
 	}
 
 

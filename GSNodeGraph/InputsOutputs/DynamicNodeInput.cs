@@ -15,6 +15,8 @@ namespace Gradientspace.NodeGraph
         public readonly static Func<Type, bool> ClassFilter = (Type t) => { return t.IsClass; };
         public readonly static Func<Type, bool> ArrayFilter = (Type t) => { return t.IsArray; };
         public readonly static Func<Type, bool> EnumerableFilter = (Type t) => { return TypeUtils.IsEnumerable(t); };
+
+        public readonly static Func<Type, bool> ListFilter = (Type t) => { return TypeUtils.IsList(t); };
     }
 
     public interface IDynamicNodeInputFilter

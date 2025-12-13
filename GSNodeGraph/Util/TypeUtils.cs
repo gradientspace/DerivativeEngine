@@ -102,7 +102,15 @@ namespace Gradientspace.NodeGraph
 
             // if this is a dynamic input, check it's ExtendedTypeInfo to verify type compatibility
             if (ToType.IsDynamic) {
-                return ToType.ExtendedTypeInfo?.IsCompatibleWith(FromType) ?? false;
+                if (ToType.ExtendedTypeInfo == null) return false;
+
+                if (ToType.ExtendedTypeInfo.IsCompatibleWith(FromType))
+                    return true;
+
+                // TODO: want to be able to handle things like PyList[int] => object[], for generic nodes, so that it can then turn into int[]
+                // not clear how to do that though...somehow need to query GlobalDataConversionLibrary but it only stores explicit conversions...
+
+                return false;
             }
 
             // fall back to standard C# restrictions
@@ -131,6 +139,9 @@ namespace Gradientspace.NodeGraph
 
         public static string TypeToString(Type type)
         {
+            if (type == null)
+                return "(null)";
+
             // handle 1D arrays...  (todo: handle N-d arrays...)
             if (type.IsArray && type.GetArrayRank() == 1 && type.GetElementType() != null) {
                 Type elemType = type.GetElementType()!;
@@ -230,6 +241,11 @@ namespace Gradientspace.NodeGraph
             return TypeImplementsInterface<System.Collections.IEnumerable>(o.GetType());
         }
 
+        public static bool IsList(Type t)
+        {
+            return t.IsGenericType && t.GetGenericTypeDefinition() == typeof(List<>);
+        }
+        public static bool IsList(object o) { return IsList(o.GetType()); }
 
         //! return the inner Type T of an IEnumerable<T>, or an object that implements that interface (including arrays)
         //! returns null if not of a suitable type

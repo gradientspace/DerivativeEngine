@@ -23,6 +23,11 @@ namespace Gradientspace.NodeGraph
 		{
 			return From.IsSameType(other.From) && To.IsSameType(other.To);
 		}
+
+        public override string ToString()
+        {
+            return $"{From.ToString()}->{To.ToString()}";
+        }
 	}
 
 
