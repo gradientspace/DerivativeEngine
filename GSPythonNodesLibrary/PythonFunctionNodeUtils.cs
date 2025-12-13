@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using System.Numerics;
 
 namespace Gradientspace.NodeGraph.PythonNodes
 {
@@ -282,7 +283,9 @@ namespace Gradientspace.NodeGraph.PythonNodes
 				return new StandardNodeOutput<double>();
             } else if (PyType.DataType == EPythonTypes.Str) {
 				return new StandardNodeOutput<string>();
-			}
+			} else if (PyType.DataType == EPythonTypes.Complex) {
+                return new StandardNodeOutput<Complex>();   // todo is this the right way to go?
+            }
 
             return new PythonNodeOutputBase(typeof(object), PyType);
         }

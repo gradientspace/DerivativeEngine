@@ -109,8 +109,9 @@ namespace Gradientspace.NodeGraph.PythonNodes
 	 * placeholder Split node for python tuples - will expand to concrete SplitTupleNode
 	 * with explicit input type and outputs
 	 */
-	[GraphNodeNamespace("Core.Python")]
-	public class SplitTuplePlaceholderNode : PythonTuplePlaceholderNodeBase
+	[GraphNodeNamespace("Python")]
+    [MappedNodeTypeName("Core.Python.SplitTuplePlaceholderNode")]
+    public class SplitTuplePlaceholderNode : PythonTuplePlaceholderNodeBase
 	{
 		public override string GetDefaultNodeName() { return "Split PyTuple"; }
 

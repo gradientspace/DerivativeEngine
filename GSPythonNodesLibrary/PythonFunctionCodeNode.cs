@@ -8,9 +8,10 @@ using System.Diagnostics;
 
 namespace Gradientspace.NodeGraph.PythonNodes
 {
-	[GraphNodeNamespace("Core.Python")]
+	[GraphNodeNamespace("Python")]
 	[GraphNodeUIName("Python Function Node")]
-	public class PythonFunctionCodeNode : PythonFunctionNodeBase, INodeWithInlineCode
+    [MappedNodeTypeName("Core.Python.PythonFunctionCodeNode")]
+    public class PythonFunctionCodeNode : PythonFunctionNodeBase, INodeWithInlineCode
 	{
 		public const string CodeInputName = "PythonCode";
 		public const string DefaultNodeName = "PythonFunction";

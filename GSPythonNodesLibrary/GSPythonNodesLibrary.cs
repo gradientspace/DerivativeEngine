@@ -18,62 +18,93 @@ namespace Gradientspace.NodeGraph.PythonNodes
 
 
 
-	[NodeFunctionLibrary("Core.Python")]
+	[NodeFunctionLibrary("Python")]
+    [MappedFunctionLibraryName("Core.Python")]
 	public static class GSPythonConversionsLibrary
 	{
 
-		public static List<T> ConvertPyListToList<T>(object obj)
+		public static List<T> ConvertPyListToList<T>(object pyList)
 		{
-			PyObject pyObj = (PyObject)obj;
+			PyObject pyObj = (PyObject)pyList;
 			List<T>? result = null;
 			using (Py.GIL()) {
 				T[] values = pyObj.As<T[]>();
-				result = new List<T>(values);
+				result = [..values];
 			}
 			return result ?? new List<T>();
 		}
 
+        public static T[] ConvertPyListToArray<T>(object pyList)
+        {
+            PyObject pyObj = (PyObject)pyList;
+            T[]? result = null;
+            using (Py.GIL()) {
+                result = pyObj.As<T[]>();
+            }
+            return result ?? [];
+        }
 
-		public static PyObject ConvertArrayToPyList<T>(T[] array)
+        public static PyObject ConvertArrayToPyList<T>(T[] array)
 		{
 			using (Py.GIL())
 			{
 				int N = array.Length;
-				PyList list = new PyList();
+				PyList pyList = new PyList();
 				for (int i = 0; i < N; ++i)
-					list.Append(array[i].ToPython());
-				return list;
+					pyList.Append(array[i].ToPython());
+				return pyList;
 			}
 		}
 
+        public static PyObject ConvertListToPyList<T>(List<T> list)
+        {
+            using (Py.GIL()) {
+                int N = list.Count;
+                PyList pyList = new PyList();
+                for (int i = 0; i < N; ++i)
+                    pyList.Append(list[i].ToPython());
+                return pyList;
+            }
+        }
 
-		[GraphDataTypeRegisterFunction]
+
+
+        private static void register_pylist_conversion<CSharpType>(DataConversionLibrary library, PythonType pyListType)
+        {
+            Type pyObjType = typeof(object);
+            library.AddConversion(new DataTypeConverterLambda(
+                new GraphDataType(pyObjType, EGraphDataFormat.Python, pyListType),
+                new GraphDataType(typeof(List<CSharpType>)),
+                (object o) => { return ConvertPyListToList<CSharpType>(o); }));
+            library.AddConversion(new DataTypeConverterLambda(
+                new GraphDataType(pyObjType, EGraphDataFormat.Python, pyListType),
+                new GraphDataType(typeof(CSharpType[])),
+                (object o) => { return ConvertPyListToArray<CSharpType>(o); }));
+            library.AddConversion(new DataTypeConverterLambda(
+                new GraphDataType(typeof(List<CSharpType>)),
+                new GraphDataType(pyObjType, EGraphDataFormat.Python, pyListType),
+                (object o) => { return ConvertListToPyList<CSharpType>((List<CSharpType>)o); }));
+            library.AddConversion(new DataTypeConverterLambda(
+                new GraphDataType(typeof(CSharpType[])),
+                new GraphDataType(pyObjType, EGraphDataFormat.Python, pyListType),
+                (object o) => { return ConvertArrayToPyList<CSharpType>((CSharpType[])o); }));
+
+        }
+
+
+        [GraphDataTypeRegisterFunction]
 		public static void RegisterConversions(DataConversionLibrary library)
 		{
-			//Type pyObjType = typeof(PyObject);		// why isn't it this??
-			Type pyObjType = typeof(object);
+            // register python/C# list/array converions for standard types
+            // (todo actually do all of them)
 
-			// register python/C# list/array converions for standard types
-			// (todo actually do all of them)
-
-			library.AddConversion( new DataTypeConverterLambda(
-				new GraphDataType(pyObjType, EGraphDataFormat.Python, PythonType.ListInt), 
-				new GraphDataType(typeof(List<int>)),
-				(object o) => { return ConvertPyListToList<int>(o); } ) );
-
-			library.AddConversion(new DataTypeConverterLambda(
-				new GraphDataType(pyObjType, EGraphDataFormat.Python, PythonType.ListStr),
-				new GraphDataType(typeof(List<string>)),
-				(object o) => { return ConvertPyListToList<string>(o); }));
-
-			library.AddConversion(new DataTypeConverterLambda(
-				new GraphDataType(typeof(string[])),
-				new GraphDataType(pyObjType, EGraphDataFormat.Python, PythonType.ListStr),
-				(object o) => { return ConvertArrayToPyList<string>((string[])o); }));
-		}
+            register_pylist_conversion<int>(library, PythonType.ListInt);
+            register_pylist_conversion<string>(library, PythonType.ListStr);
+            register_pylist_conversion<double>(library, PythonType.ListFloat);
+            register_pylist_conversion<bool>(library, PythonType.ListBool);
+        }
 
 
-
-	}
+    }
 
 }

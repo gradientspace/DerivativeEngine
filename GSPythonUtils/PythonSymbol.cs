@@ -215,10 +215,13 @@ namespace GSPython
 		// constants for various standard types (generally that convert to C# types)
 		public static PythonType ListInt = new PythonType(EPythonTypes.List, EPythonTypes.Int);
 		public static PythonType ListStr = new PythonType(EPythonTypes.List, EPythonTypes.Str);
+        public static PythonType ListFloat = new PythonType(EPythonTypes.List, EPythonTypes.Float);
+        public static PythonType ListBool = new PythonType(EPythonTypes.List, EPythonTypes.Bool);
+        public static PythonType ListComplex = new PythonType(EPythonTypes.List, EPythonTypes.Complex);
 
 
-		//! return true if this type is the same as the other type
-		public readonly bool IsSameType(in PythonType other)
+        //! return true if this type is the same as the other type
+        public readonly bool IsSameType(in PythonType other)
 		{
 			if (DataType != other.DataType)
 				return false;
