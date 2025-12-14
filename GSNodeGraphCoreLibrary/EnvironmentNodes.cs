@@ -79,11 +79,34 @@ namespace Gradientspace.NodeGraph.Nodes
 		}
 
 
+        [NodeFunction]
+        public static string GetEnvVariable(string Name, out bool Exists, string DefaultString = "")
+        {
+            string? found = Environment.GetEnvironmentVariable(Name);
+            Exists = (found != null);
+            return Exists ? found! : DefaultString;
+        }
+
+        [NodeFunction]
+        public static void SetEnvVariable(string Name, string NewValue)
+        {
+            Environment.SetEnvironmentVariable(Name, NewValue);
+        }
+
+        [NodeFunction]
+        public static void ExpandEnvVariables(string ToExpand, out string Expanded)
+        {
+            Expanded = Environment.ExpandEnvironmentVariables(ToExpand);
+        }
 
 
-		// internals/utilities
 
-		public static string? find_argument_from_prefix(string prefix, bool bIgnoreCase)
+        // registry key...
+
+
+        // internals/utilities
+
+        public static string? find_argument_from_prefix(string prefix, bool bIgnoreCase)
 		{
 			StringComparison useComparison = (bIgnoreCase) ? StringComparison.InvariantCultureIgnoreCase : StringComparison.InvariantCulture;
 
