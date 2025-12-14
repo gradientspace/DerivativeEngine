@@ -94,7 +94,12 @@ namespace Gradientspace.NodeGraph
 
             object?[] arguments = FunctionNodeUtils.ConstructFuncEvaluationArguments(FunctionInfo, DataIn);
 
-            object? returnObj = Function!.Invoke(null, arguments);
+            object? returnObj = null;
+            try {
+                returnObj = Function!.Invoke(null, arguments);
+            } catch (Exception ex) {
+                throw ex.InnerException ?? ex;
+            }
 
             FunctionNodeUtils.ExtractFuncEvaluationOutputs(FunctionInfo, arguments, RequestedDataOut);
 
