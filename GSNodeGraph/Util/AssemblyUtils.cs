@@ -59,6 +59,68 @@ namespace Gradientspace.NodeGraph.Util
             FailedToLoad
         }
 
+
+        /// <summary>
+        /// Try to infer which Assemblies need to be loaded from C# code.
+        /// So far, just parses out the 'using A.B.C' namespaces and tries to load based on namespace 
+        /// </summary>
+        public static bool TryLoadAssembliesFromCode(string codeText, bool bSuppressErrorMessages)
+        {
+            bool bAllOK = true;
+            string[] lines = codeText.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            foreach (string line in lines) {
+
+                // todo: this will fail for single-file .cs files...
+
+                if (line.StartsWith("using ")) 
+                {
+                    string assemblyName = line.Replace("using ", "").Replace(';', ' ').Trim();
+                    EAssemblyLoadResult loadResult = TryLoadAssemblyByNamespace(assemblyName, bSuppressErrorMessages);
+                    if (loadResult == EAssemblyLoadResult.FailedToLoad)
+                        bAllOK = false;
+                    continue;
+                }
+                if (line.Contains("namespace")) break;      // as soon as we get to namespace we are done
+                if (line.Contains("class")) break;      // as soon as we get to namespace we are done
+            }
+            return bAllOK;
+        }
+
+        /// <summary>
+        /// Try to load the assembly for a 'using A.B.C;' namespace. This inherently is the wrong thing
+        /// to do, as there is no direct connection between namespace name and assembly name. 
+        /// 
+        /// If A.B.C doesn't work, the code will recursively try A.B and then A
+        /// 
+        /// </summary>
+        public static EAssemblyLoadResult TryLoadAssemblyByNamespace(string Namespace, bool bSilent = false)
+        {
+            Assembly? foundAssembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(asm => asm.FullName?.StartsWith(Namespace) ?? false );
+            if (foundAssembly != null)
+                return EAssemblyLoadResult.AlreadyLoaded;
+
+            try {
+                Assembly.Load(Namespace);
+            } catch (Exception) {
+                if (!bSilent)
+                    GlobalGraphOutput.AppendError($"Failed to find or load assembly {Namespace}");
+
+                // try loading parent namespace
+                int idx = Namespace.LastIndexOf('.');
+                if (idx > 0) {
+                    string parentNamespace = Namespace.Substring(0, idx);
+                    EAssemblyLoadResult parentResult = TryLoadAssemblyByNamespace(parentNamespace, bSilent);
+                    if (parentResult != EAssemblyLoadResult.FailedToLoad)
+                        return parentResult;
+                }
+
+
+                return EAssemblyLoadResult.FailedToLoad;
+            }
+            return EAssemblyLoadResult.LoadedSuccessfully;
+        }
+
+
         public static EAssemblyLoadResult TryFindLoadAssembly(string QualifiedName, string DLLName)
         {
             Assembly? foundAssembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(asm => asm.FullName == QualifiedName);
