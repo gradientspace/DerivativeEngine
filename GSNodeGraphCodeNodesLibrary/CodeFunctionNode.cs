@@ -1,5 +1,6 @@
 // Copyright Gradientspace Corp. All Rights Reserved.
 using Gradientspace.NodeGraph;
+using Gradientspace.NodeGraph.Util;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -66,9 +67,15 @@ namespace Gradientspace.NodeGraph.CodeNodes
 		public virtual string GetCodeNameHint() {
 			return CodeNodeMethodName;
 		}
+        public bool LastCompileOK => bLastCompileOK;
+        public IEnumerable<string> LastCompileMessages => lastCompileMessages;
 
-		// TODO this will not work need to use Dispose()...
-		~CodeFunctionNode() {
+        protected bool bLastCompileOK = false;
+        protected List<string> lastCompileMessages = new();
+
+
+        // TODO this will not work need to use Dispose()...
+        ~CodeFunctionNode() {
             // can we remove this wait?
             UnloadAssembly(true);
         }
@@ -80,7 +87,13 @@ namespace Gradientspace.NodeGraph.CodeNodes
 
         protected void OnCodeUpdated()
         {
-            List<string> Errors = new List<string>();
+            bLastCompileOK = false;
+            lastCompileMessages.Clear();
+
+            // Try to make sure any assemblies in use are loaded.
+            // This will fail for lots of things but it's worth a shot...
+            AssemblyUtils.TryLoadAssembliesFromCode(SourceCode.CodeText, bSuppressErrorMessages:true);
+
             CompiledAssembly = null;
             using (var peStream = new MemoryStream())
             {
@@ -88,7 +101,7 @@ namespace Gradientspace.NodeGraph.CodeNodes
                 EmitResult? result = Compilation?.Emit(peStream) ?? null;
 
                 if (result == null) {
-                    Errors.Add("Compiler failed without providing error information");
+                    lastCompileMessages.Add("Compiler failed without providing error information");
                     Debug.WriteLine("[CodeFunctionNode] GenerateCode failed without error for SourceText: " + SourceCode.CodeText);
                 } 
                 else if (result.Success == false)
@@ -99,7 +112,7 @@ namespace Gradientspace.NodeGraph.CodeNodes
                         FileLinePositionSpan LineSpan = diagnostic.Location.GetLineSpan();
                         int LineNum = LineSpan.StartLinePosition.Line - NumPrependedLines + 1;
                         Debug.WriteLine("Line {0} - {1}: {2}", LineNum, diagnostic.Id, diagnostic.GetMessage());
-                        Errors.Add(string.Format("Line {0} - {1}: {2}", LineNum, diagnostic.Id, diagnostic.GetMessage()));
+                        lastCompileMessages.Add(string.Format("Line {0} - {1}: {2}", LineNum, diagnostic.Id, diagnostic.GetMessage()));
                     }
                 }
                 else
@@ -114,7 +127,7 @@ namespace Gradientspace.NodeGraph.CodeNodes
             }
 
             if (CompiledAssembly == null ) {
-                OnCompileStatusUpdate?.Invoke(false, Errors);
+                OnCompileStatusUpdate?.Invoke(this);
                 return;
             }
 
@@ -127,24 +140,24 @@ namespace Gradientspace.NodeGraph.CodeNodes
                 NodeName = LoadedAssembly.CodeNodeMethod.GetCustomAttribute<NodeFunctionUIName>()?.UIName ?? LoadedAssembly.CodeNodeMethod.Name;
 
                 PublishNodeModifiedNotification();
-                OnCompileStatusUpdate?.Invoke(true, null);
+                bLastCompileOK = true;
             }
             else
             {
                 if (LoadedAssembly == null) {
                     Debug.WriteLine("[CodeFunctionNode] Compile OK but Assembly could not be loaded");
-                    Errors.Add("compiled Assembly could not be loaded");
+                    lastCompileMessages.Add("compiled Assembly could not be loaded");
                 }
                 else if (LoadedAssembly.CodeNodeClass == null) {
                     Debug.WriteLine("[CodeFunctionNode] Could not find class named NodeClass");
-                    Errors.Add("Could not find class named NodeClass");
+                    lastCompileMessages.Add("Could not find class named NodeClass");
                 } 
                 else if (LoadedAssembly.CodeNodeMethod == null) {
                     Debug.WriteLine("[CodeFunctionNode] Could not find public static method in class NodeClass");
-                    Errors.Add("Could not find public static method in class NodeClass");
+                    lastCompileMessages.Add("Could not find public static method in class NodeClass");
                 }
-                OnCompileStatusUpdate?.Invoke(false, Errors);
             }
+            OnCompileStatusUpdate?.Invoke(this);
         }
 
 

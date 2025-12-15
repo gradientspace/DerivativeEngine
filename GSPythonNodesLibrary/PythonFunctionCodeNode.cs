@@ -62,15 +62,22 @@ namespace Gradientspace.NodeGraph.PythonNodes
 			return (NodeFunction != null) ? NodeFunction.FunctionName : "PythonNode";
 		}
 
+        public bool LastCompileOK => bLastCompileOK;
+        public IEnumerable<string> LastCompileMessages => lastCompileMessages;
 
-		protected PythonLibrary? CurrentPyLib = null;
+        protected bool bLastCompileOK = false;
+        protected List<string> lastCompileMessages = new();
+
+
+        protected PythonLibrary? CurrentPyLib = null;
 		protected PythonFunction? NodeFunction = null;
 
 		protected void OnCodeUpdated()
 		{
-			List<string> Errors = new List<string>();
+            bLastCompileOK = false;
+            lastCompileMessages.Clear();
 
-			try
+            try
 			{
 				PythonSetup.InitializePython();
 				if (PythonSetup.IsPythonAvailable)
@@ -89,7 +96,7 @@ namespace Gradientspace.NodeGraph.PythonNodes
 				Debug.WriteLine("[PythonFunctionCodeNode] Compile Error!!");
 				// tood can we get more feedback here?
 				Debug.WriteLine(ex.Message);
-				Errors.Add(ex.Message);
+                lastCompileMessages.Add(ex.Message);
 
 				CurrentPyLib = null;
 				NodeFunction = null;
@@ -100,18 +107,18 @@ namespace Gradientspace.NodeGraph.PythonNodes
 				setFunction(CurrentPyLib, NodeFunction);
 				NodeName = NodeFunction.FunctionName;
 				PublishNodeModifiedNotification();
-				OnCompileStatusUpdate?.Invoke(true, null);
+                bLastCompileOK = true;
 			} else { 
 				clearFunction();
-				OnCompileStatusUpdate?.Invoke(false, Errors);
 			}
-		}
+            OnCompileStatusUpdate?.Invoke(this);
+        }
 
 
 
-		// load/save
+        // load/save
 
-		public const string CodeTextString = "CodeText";
+        public const string CodeTextString = "CodeText";
 		public const string CodeLanguageString = "Language";
 		public override void CollectCustomDataItems(out NodeCustomData? DataItems)
 		{

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Gradientspace.NodeGraph.CodeNodes
 {
-	public delegate void ICodeNodeCompileStatusEvent(bool bCompileOK, List<string>? Errors);
+	public delegate void ICodeNodeCompileStatusEvent(INodeWithInlineCode SourceNode);
 
 	public interface INodeWithInlineCode
 	{
@@ -16,6 +16,10 @@ namespace Gradientspace.NodeGraph.CodeNodes
 		void SetInlineSourceCode(SourceCodeDataType NewSourceCode);
 		string GetCodeNameHint();
 
-		event ICodeNodeCompileStatusEvent? OnCompileStatusUpdate;
+        // status of last compile attempt
+        bool LastCompileOK { get; }
+        IEnumerable<string> LastCompileMessages { get; }
+
+        event ICodeNodeCompileStatusEvent? OnCompileStatusUpdate;
 	}
 }
