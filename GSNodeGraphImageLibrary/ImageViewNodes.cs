@@ -12,6 +12,7 @@ namespace Gradientspace.NodeGraph.Image
     public class ImageViewNode : NodeBase
     {
         public override string GetDefaultNodeName() { return "ViewImage"; }
+        public override string? GetNodeNamespace() { return "Image"; }
 
         public const string ImageInputName = "Image";
         public const string ImageOutputName = "Image";

@@ -40,6 +40,16 @@ namespace Gradientspace.NodeGraph.Image
             return new PixelImage(fromImage.Width, fromImage.Height, PixelImage.EPixelFormat.RGBA8, uncompressedBytes);
         }
 
+        public static byte[] GetDecompressedRGBA8Bytes(PixelImage fromImage, bool bAsSRGB)
+        {
+            if (fromImage.Compression == PixelImage.ECompression.Uncompressed &&
+                fromImage.Format == PixelImage.EPixelFormat.RGBA8)
+                    return fromImage.ExtractBytes();
+
+            PixelImage tmpImage = ImageUtil.GetDecompressedRGBA8(fromImage, true);
+            return tmpImage.ExtractBytes(false);
+        }
+
 
         public static SKImage PixelImageToSKImage(PixelImage Image)
         {

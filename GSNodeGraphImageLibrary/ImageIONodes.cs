@@ -5,7 +5,7 @@ using Gradientspace.NodeGraph.Nodes;
 
 namespace Gradientspace.NodeGraph.Image
 {
-    [NodeFunctionLibrary("Geometry3.Image")]
+    [NodeFunctionLibrary("Image")]
     [MappedFunctionLibraryName("Geometry3.Image")]
     public static class ImageIOFunctions
     {
