@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace Gradientspace.NodeGraph
 {
     /**
-     *  EnumList is a data type intended to represent a fixed set of choices that 
+     *  EnumOptionSet is a data type intended to represent a fixed set of choices that 
      *  is determined at runtime. For example the list of fields available on a
      *  dynamically-selected class type, etc.
      */
