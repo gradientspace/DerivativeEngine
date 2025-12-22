@@ -1,8 +1,9 @@
 // Copyright Gradientspace Corp. All Rights Reserved.
+using Gradientspace.NodeGraph.Util;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json;
-using Gradientspace.NodeGraph.Util;
 
 namespace Gradientspace.NodeGraph
 {
@@ -216,6 +217,8 @@ namespace Gradientspace.NodeGraph
 
         public struct RestoreGraphOptions
         {
+            public bool TryAutoRepairRenamedConnections = true;
+
             public INodeGraphLayoutProvider? LayoutProvider = null;
 
             public Func<NodeType, int, string, bool>? IncludeNodeFunc = null;
@@ -395,14 +398,9 @@ namespace Gradientspace.NodeGraph
             }
             SortedConnections = filtered.ToArray();
 
-			// sort nodes by connectivity, so that a node should end up before any
-			// of it's downstream connections. 
-            // TODO: does this actually always work? possibly incorrect definition of partial order
-			Array.Sort(SortedConnections, (first, second) => {
-                if (first.HasConnectionTo(second.NodeIdentifier))   return -1;
-                if (second.HasConnectionTo(first.NodeIdentifier))   return 1;
-                return 0;       // nodes are not connected, no ordering preference
-			});
+            // sort nodes by connectivity, so that a node should end up before any
+            // of it's downstream connections
+            SortedConnections = SortNodeConnections(SortedConnections);
 
             // now we can process nodes in-order
             foreach (NodeConnections nodeConnections in SortedConnections)
@@ -419,7 +417,20 @@ namespace Gradientspace.NodeGraph
                     bool bOK = appendToGraph.AddConnection(
                         new NodeHandle(c.FromNode), c.OutputName,
                         new NodeHandle(c.ToNode), c.InputName, bDoTypeChecking);
-                    if (!bOK) 
+
+                    // if connection fails, try to autorepair it
+                    // (todo: should defer this until after we try all connections as we
+                    //  could be more flexible in heuristics at that point...
+                    if (bOK == false && options.TryAutoRepairRenamedConnections) {
+                        if (TryAutoRepairConnection(appendToGraph, c, out Connection newC)) {
+                            // try again with repaired connection
+                            bOK = appendToGraph.AddConnection(
+                                new NodeHandle(newC.FromNode), newC.OutputName,
+                                new NodeHandle(newC.ToNode), newC.InputName, bDoTypeChecking);
+                        }
+                    }
+
+                    if (bOK == false) 
                     {
                         // If connection fails, it's either because nodes or pins are missing.
                         // In the pins case we can try to add 'error' pins/connections
@@ -448,6 +459,65 @@ namespace Gradientspace.NodeGraph
         }
 
 
+        protected static bool TryAutoRepairConnection(ExecutionGraph graph, Connection connection, out Connection newConnection)
+        {
+            newConnection = connection;
+
+            NodeHandle FromNodeHandle = new NodeHandle(connection.FromNode);
+            NodeHandle ToNodeHandle = new NodeHandle(connection.ToNode);
+            NodeBase? FromNode = graph.FindNodeFromHandle(FromNodeHandle);
+            NodeBase? ToNode = graph.FindNodeFromHandle(ToNodeHandle);
+            if (FromNode == null || ToNode == null)
+                return false;
+
+            INodeOutput? Output = FromNode.FindOutput(connection.OutputName);
+            INodeInput? Input = ToNode.FindInput(connection.InputName);
+            if (Output == null && Input == null)
+                return false;
+
+            // if we could not find an output by name, try matching by type
+            // only unique matches are allowed for now
+            // (could relax this if we know other outputs/inputs are already used...)
+            string? newOutputName = null;
+            if (Output == null) {
+                GraphDataType dataType = Input!.GetDataType();
+                int Count = 0;
+                foreach( var output in FromNode.EnumerateOutputs() ) {
+                    if ( output.Output.GetDataType().IsSameType(in dataType) ) {
+                        newOutputName = output.OutputName;
+                        Count++;
+                    }
+                }
+                if (Count != 1)
+                    newOutputName = null;
+            }
+
+            // if we could not find an input by name, try matching by type
+            // only unique matches are allowed for now
+            string? newInputName = null;
+            if (Input == null) {
+                GraphDataType dataType = Output!.GetDataType();
+                int Count = 0;
+                foreach (var input in ToNode.EnumerateInputs()) {
+                    if (input.Input.GetDataType().IsSameType(in dataType)) {
+                        newInputName = input.InputName;
+                        Count++;
+                    }
+                }
+                if (Count != 1)
+                    newInputName = null;
+            }
+
+            if (newInputName != null && newConnection.InputName != newInputName) {
+                newConnection.InputName = newInputName;
+                return true;
+            }
+            if (newOutputName != null && newConnection.OutputName != newOutputName) {
+                newConnection.OutputName = newOutputName;
+                return true;
+            }
+            return false;
+        }
 
 
         public static bool IsSerializedGraphJSon(string json)
@@ -461,5 +531,69 @@ namespace Gradientspace.NodeGraph
         }
 
 
+
+        // topological sort of an array of NodeConnections. This is Kahn's algorithm, implemented inefficiently...
+        // The right thing to do would be to redesign NodeConnections...we need things 
+        // structured in a graph to be able to do the topo-sort. We flattened the (known)
+        // graph to create NodeConnections...
+        internal static NodeConnections[] SortNodeConnections(NodeConnections[] sortedConnections)
+        {
+            // todo we already kinda have adjacencyList's in NodeConnections.ConnectionsOut...
+
+            int n = sortedConnections.Length;
+            var adjacencyList = new Dictionary<NodeConnections, List<NodeConnections>>();
+            var inDegree = new Dictionary<NodeConnections, int>();
+
+            // 1. Initialize dictionaries
+            foreach (var node in sortedConnections) {
+                adjacencyList[node] = new List<NodeConnections>();
+                inDegree[node] = 0;
+            }
+
+            // 2. Build the graph by checking pairs (O(N^2))
+            // We check if 'a' must come before 'b'
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < n; j++) {
+                    if (i == j) continue;
+
+                    var a = sortedConnections[i];
+                    var b = sortedConnections[j];
+
+                    if (a.HasConnectionTo(b.NodeIdentifier)) {
+                        // If a has a connection to b, it means a is a prerequisite for b
+                        adjacencyList[a].Add(b);
+                        inDegree[b]++;
+                    }
+                }
+            }
+
+            // 3. Standard Kahn's Logic
+            var queue = new Queue<NodeConnections>();
+            foreach (var node in sortedConnections) {
+                if (inDegree[node] == 0)
+                    queue.Enqueue(node);
+            }
+
+            var result = new List<NodeConnections>();
+
+            while (queue.Count > 0) {
+                var current = queue.Dequeue();
+                result.Add(current);
+
+                if (adjacencyList.ContainsKey(current)) {
+                    foreach (var neighbor in adjacencyList[current]) {
+                        inDegree[neighbor]--;
+                        if (inDegree[neighbor] == 0)
+                            queue.Enqueue(neighbor);
+                    }
+                }
+            }
+
+            // 4. Verification
+            if (result.Count != n)
+                throw new InvalidOperationException("Cycle detected or missing nodes in graph.");
+
+            return result.ToArray();
+        }
     }
 }
