@@ -101,10 +101,18 @@ namespace Gradientspace.NodeGraph
                 if (paramName == null)
                     paramName = "arg" + i.ToString();
 
+                // this checks if parameter is marked with a ?
+                bool bIsDeclaredNullable = FunctionNodeUtils.IsNullableParameter(paramInfo);
+
                 bool bIsRefParam = paramType.IsByRef && (paramInfo.IsOut == false);
                 Type baseType = (bIsRefParam || paramInfo.IsOut) ? paramType.GetElementType()! : paramType;        // strip off &
+
+                // This only detects nullable value parameters, eg like a double?, which will have a paramType Nullable<T>
+                // For object parameters, paramType will just be the object type (because they can always be null, I guess?)
+                // The bIsDeclaredNullable above will catch those cases
                 Type? realType = System.Nullable.GetUnderlyingType(paramType);
                 bool bIsNullable = (realType != null);      // todo can use TypeUtils.IsNullableType(paramType) here? but need to check realType behavior...
+
                 if (bIsRefParam && bIsNullable)
                     throw new Exception("LibraryFunctionNode.buildArguments(): nullable ref parameters are not currently supported.");
 
@@ -130,7 +138,7 @@ namespace Gradientspace.NodeGraph
                     inputArg.paramInfo = paramInfo;
                     inputArg.argIndex = i;
                     inputArg.argName = paramName;
-                    inputArg.bIsOptional = bIsNullable;
+                    inputArg.bIsOptional = bIsNullable || bIsDeclaredNullable;
                     inputArg.bIsRefInput = bIsRefParam;
                     inputArg.argType = (bIsNullable) ? realType! : baseType;
                     InputArguments[InputI++] = inputArg;
@@ -146,6 +154,22 @@ namespace Gradientspace.NodeGraph
 
     public static class FunctionNodeUtils
     {
+        // check if a method parameter is explicitly marked as nullable (ie with a ?)
+        public static bool IsNullableParameter(ParameterInfo paramInfo)
+        {
+            CustomAttributeData? foundAttrib = paramInfo.CustomAttributes.FirstOrDefault(
+                a => a.AttributeType.FullName == "System.Runtime.CompilerServices.NullableAttribute");
+            if (foundAttrib == null) return false;
+            var value = foundAttrib.ConstructorArguments.FirstOrDefault().Value;
+            if (value is byte b)
+                return (b == 2);
+
+            // in this case, the value is a ReadOnlyCollection, or something more complicated...so fall
+            // back to more complex check
+            return (new NullabilityInfoContext().Create(paramInfo).WriteState == NullabilityState.Nullable);
+        }
+
+
         public static object?[] ConstructFuncEvaluationArguments(in FunctionNodeInfo FunctionInfo, in NamedDataMap DataIn)
         {
             object?[] arguments = new object[FunctionInfo.NumArguments];
