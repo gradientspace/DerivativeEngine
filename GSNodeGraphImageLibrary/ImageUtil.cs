@@ -62,5 +62,39 @@ namespace Gradientspace.NodeGraph.Image
                 return SKImage.FromEncodedData(Image.AccessDataUnsafe());
             }
         }
+
+        public static byte[] PixelImageToJpeg(PixelImage Image, int Quality = 100)
+        {
+            if (Image.Compression == PixelImage.ECompression.JPEG)
+                return Image.ExtractBytes();
+
+            SKImage skImage = PixelImageToSKImage(Image);
+            SKData imageData = skImage.Encode(SKEncodedImageFormat.Jpeg, Quality);
+            return imageData.ToArray();
+        }
+
+        public static byte[] PixelImageToPng(PixelImage Image, int Quality = 100)
+        {
+            if (Image.Compression == PixelImage.ECompression.PNG)
+                return Image.ExtractBytes();
+
+            SKImage skImage = PixelImageToSKImage(Image);
+            SKData imageData = skImage.Encode(SKEncodedImageFormat.Png, Quality);
+            return imageData.ToArray();
+        }
+
+        public static byte[] PixelImageToMimeData(PixelImage Image, out string mimeType, int Quality = 100)
+        {
+            if (Image.Compression == PixelImage.ECompression.JPEG) {
+                mimeType = "image/jpeg";
+                return Image.ExtractBytes();
+            }
+            if (Image.Compression == PixelImage.ECompression.PNG) {
+                mimeType = "image/png";
+                return Image.ExtractBytes();
+            }
+            mimeType = "image/jpeg";
+            return PixelImageToJpeg(Image, Quality);
+        }
     }
 }
