@@ -496,10 +496,17 @@ namespace Gradientspace.NodeGraph
             // only unique matches are allowed for now
             string? newInputName = null;
             if (Input == null) {
-                GraphDataType dataType = Output!.GetDataType();
+                GraphDataType fromDataType = Output!.GetDataType();
                 int Count = 0;
                 foreach (var input in ToNode.EnumerateInputs()) {
-                    if (input.Input.GetDataType().IsSameType(in dataType)) {
+                    GraphDataType toDataType = input.Input.GetDataType();
+                    bool bTypeMatches = toDataType.IsSameType(in fromDataType);
+
+                    // TODO: this is maybe too relaxed as it will allow (eg) a double to an int...
+                    if (!bTypeMatches)
+                        bTypeMatches = TypeUtils.CanConnectFromTo(fromDataType, toDataType);
+                   
+                    if (bTypeMatches) {
                         newInputName = input.InputName;
                         Count++;
                     }
