@@ -58,6 +58,10 @@ namespace Gradientspace.NodeGraph
             bIsUnsigned = false; NumBytes = 0; return false;
         }
 
+        public static bool IsStruct(Type type)
+        {
+            return type.IsValueType && (type.IsEnum == false) && (type.IsPrimitive == false) && (type != typeof(decimal));
+        }
 
         public static bool IsOfBaseClass<T>(object? o) where T : class
         {
@@ -467,5 +471,35 @@ namespace Gradientspace.NodeGraph
             return null;
         }
 
-    }
+
+
+        public static IEnumerable<(string Name, Type dataType, MemberInfo memberInfo)> EnumerateStructDataMembers(
+            Type structType, bool bIncludeProperties = true, bool bOnlyPublicSettable = true)
+        {
+            if (structType == null || IsStruct(structType) == false)
+                yield break;
+
+
+            FieldInfo[] fields = structType.GetFields(BindingFlags.Public | BindingFlags.Instance);
+
+            IEnumerable<PropertyInfo>? includeProperties = null;
+            if (bIncludeProperties) {
+                PropertyInfo[] properties = structType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+                includeProperties = (bOnlyPublicSettable) ?
+                    properties.Where(p => p.GetSetMethod() != null && p.GetSetMethod()!.IsPublic && p.GetIndexParameters().Length == 0) : properties;
+            }
+            if (includeProperties == null) includeProperties = Array.Empty<PropertyInfo>();
+
+            // linq probably not ideal way to do this...
+            var members = fields.Cast<MemberInfo>()
+                                    .Concat(includeProperties.Cast<MemberInfo>())
+                                    .OrderBy(m => m.MetadataToken); // This can help enforce declaration order
+            foreach (MemberInfo member in members) {
+                Type dataType = (member is FieldInfo fieldInfo) ? fieldInfo.FieldType : ((PropertyInfo)member).PropertyType;
+                yield return (member.Name, dataType, member);
+            }
+        }
+
+
+}
 }

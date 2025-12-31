@@ -51,6 +51,11 @@ namespace Gradientspace.NodeGraph
             Items[Index].Value = value;
         }
 
+        public void SetItemValueOrNull(int Index, object? value)
+        {
+            Items[Index].Value = value;
+        }
+
         public int IndexOfItem(string Name)
         {
             int N = Items.Length;
@@ -162,6 +167,20 @@ namespace Gradientspace.NodeGraph
                 }
             }
             throw new Exception("Could not find output named " + Name);
+        }
+
+
+        /// ignores if Name doesn't exist in map
+        public bool SetItemValueOrNull_UnChecked(string Name, object? value)
+        {
+            int N = Items.Length;
+            for (int i = 0; i < N; ++i) {
+                if (Items[i].Name == Name) {
+                    Items[i].Value = value;
+                    return true;
+                }
+            }
+            return false;
         }
 
     }
