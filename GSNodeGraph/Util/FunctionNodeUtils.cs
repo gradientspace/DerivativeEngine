@@ -413,6 +413,15 @@ namespace Gradientspace.NodeGraph
                     return new StandardNodeInputBaseWithConstant(inputType, defaultValue);
             }
 
+            // try registered types
+            if (DefaultTypeInfoLibrary.TypeSupportsInputConstant(inputType)) {
+                object? defaultValue = DefaultTypeInfoLibrary.GetDefaultConstantValueForType(inputType, null);
+                if (defaultValue == null)
+                    return new StandardNodeInputBase(inputType);
+                else
+                    return new StandardNodeInputBaseWithConstant(inputType, defaultValue);
+            }
+
             if ( TypeUtils.IsNullableType(inputType) )
 				return new StandardNullableNodeInput(inputType);
 
