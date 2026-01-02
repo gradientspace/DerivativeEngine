@@ -265,7 +265,7 @@ namespace Gradientspace.NodeGraph
                 return false;
 
             if (options.AllRestoredTags != null) {
-                foreach (var kvp in Serialized.Header.MetaTags)
+                foreach (var kvp in Serialized.Header.MetaTags ?? [] )
                     options.AllRestoredTags.Add(kvp.Key, kvp.Value);
             }
 
