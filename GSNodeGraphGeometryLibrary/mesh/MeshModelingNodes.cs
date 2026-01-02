@@ -26,6 +26,21 @@ namespace Gradientspace.NodeGraph.Geometry3
             return (bOK) ? boolean.Result : null;            
         }
 
+        [NodeFunction]
+        public static void MeshPlaneCut(ref DMesh3 Mesh, Frame3d Frame, 
+            bool FillHoles = true, double CollapseTol = 0)
+        {
+            MeshPlaneCut cutOp = new MeshPlaneCut(Mesh, Frame.Origin, Frame.Z);
+            if ( CollapseTol > 0 )
+                cutOp.DegenerateEdgeTol = CollapseTol;
+            if ( cutOp.Cut() ) {
+                if (FillHoles) {
+                    PlanarHoleFiller filler = new PlanarHoleFiller(cutOp);
+                    filler.Fill();
+                }
+            }
+        }
+
 
 
         [NodeFunction]
