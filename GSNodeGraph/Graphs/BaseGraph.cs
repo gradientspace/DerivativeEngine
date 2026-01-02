@@ -145,9 +145,10 @@ namespace Gradientspace.NodeGraph
         }
 
         // todo this should return a struct that includes (eg) info about whether there will be a conversion, etc
+        // (note this is an INodeGraph function so would need TypeMatchInfo to live there...)
         public virtual bool CanConnectTypes(GraphDataType FromOutputDataType, GraphDataType ToInputDataType)
         {
-            return TypeUtils.CanConnectFromTo(FromOutputDataType, ToInputDataType);
+            return TypeUtils.CanConnectFromTo(FromOutputDataType, ToInputDataType, out TypeUtils.TypeMatchInfo matchInfo);
         }
 
 

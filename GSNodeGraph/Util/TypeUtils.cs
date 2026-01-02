@@ -72,44 +72,88 @@ namespace Gradientspace.NodeGraph
         }
 
 
-        // todo this should return a struct that includes (eg) info about whether there will be a conversion, etc
-        public static bool CanConnectFromTo(Type FromType, Type ToType)
+
+
+        public enum ETypeMatch
         {
-            if (FromType == ToType)      // can always connect identical types
+            Exact = 0,
+            Subclass = 1,
+            Assignable = 2,
+
+            NumericCast_Safe = 5,
+            NumericCast_Narrowing = 6,
+
+            ToGeneric = 50,
+            RegisteredConversion = 100,
+            DynamicMatch = 200,
+
+            NoMatch = 9999
+        }
+
+        public struct TypeMatchInfo
+        {
+            public GraphDataType FromType;
+            public GraphDataType ToType;
+            public ETypeMatch TypeMatch;
+        }
+
+
+        // todo this should return a struct that includes (eg) info about whether there will be a conversion, etc
+        public static bool CanConnectFromTo(Type FromType, Type ToType, out ETypeMatch typeMatch)
+        {
+            typeMatch = ETypeMatch.NoMatch;
+
+            if (FromType == ToType) {     // can always connect identical types
+                typeMatch = ETypeMatch.Exact;
                 return true;
-            if (ToType == typeof(object))      // can always connect anything to object
+            }
+            if (ToType == typeof(object)) {      // can always connect anything to object
+                typeMatch = ETypeMatch.ToGeneric;
                 return true;
-            if (FromType.IsSubclassOf(ToType))   // can always cast to base class
+            }
+            if (FromType.IsSubclassOf(ToType)) {  // can always cast to base class
+                typeMatch = ETypeMatch.Subclass;
                 return true;
+            }
 
             // this should cover interfaces, maybe operator= ?
-            if (FromType.IsAssignableTo(ToType))
+            if (FromType.IsAssignableTo(ToType)) {
+                typeMatch = ETypeMatch.Assignable;
                 return true;
+            }
 
             // currently allowing all number casts
-            if (IsNumericType(FromType) && IsNumericType(ToType))
+            if (IsNumericType(FromType) && IsNumericType(ToType)) {
+                typeMatch = ETypeMatch.NumericCast_Narrowing;       // TODO: sort out cases here
                 return true;
+            }
 
             return false;
         }
 
 
         // todo this should return a struct that includes (eg) info about whether there will be a conversion, etc
-        public static bool CanConnectFromTo(GraphDataType FromType, GraphDataType ToType)
+        public static bool CanConnectFromTo(GraphDataType FromType, GraphDataType ToType, out TypeMatchInfo matchInfo)
         {
             // TODO: conversions should perhaps come after IsDynamic check? The issue is that currently
             // python inputs are marked as Dynamic, which probably should not be the case...do we still need that?
 
+            matchInfo = new TypeMatchInfo() { FromType = FromType, ToType = ToType, TypeMatch = ETypeMatch.NoMatch };
+
             // check for registered automatic conversions
-            if (GlobalDataConversionLibrary.Find(FromType, ToType, out IDataTypeConversion? foundConversion))
+            if (GlobalDataConversionLibrary.Find(FromType, ToType, out IDataTypeConversion? foundConversion)) {
+                matchInfo.TypeMatch = ETypeMatch.RegisteredConversion;
                 return true;
+            }
 
             // if this is a dynamic input, check it's ExtendedTypeInfo to verify type compatibility
             if (ToType.IsDynamic) {
                 if (ToType.ExtendedTypeInfo == null) return false;
 
-                if (ToType.ExtendedTypeInfo.IsCompatibleWith(FromType))
+                if (ToType.ExtendedTypeInfo.IsCompatibleWith(FromType)) {
+                    matchInfo.TypeMatch = ETypeMatch.DynamicMatch;
                     return true;
+                }
 
                 // TODO: want to be able to handle things like PyList[int] => object[], for generic nodes, so that it can then turn into int[]
                 // not clear how to do that though...somehow need to query GlobalDataConversionLibrary but it only stores explicit conversions...
@@ -118,7 +162,12 @@ namespace Gradientspace.NodeGraph
             }
 
             // fall back to standard C# restrictions
-            return TypeUtils.CanConnectFromTo(FromType.CSType, ToType.CSType);
+            if (TypeUtils.CanConnectFromTo(FromType.CSType, ToType.CSType, out ETypeMatch typeMatch)) {
+                matchInfo.TypeMatch = typeMatch;
+                return true;
+            }
+
+            return false;
         }
 
 

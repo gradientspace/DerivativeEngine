@@ -74,7 +74,7 @@ namespace Gradientspace.NodeGraph
             }
         }
 
-        public virtual IEnumerable<NodeType> EnumerateAllNodesWithFirstAssignablePinType(GraphDataType fromPinDataType)
+        public virtual IEnumerable<(NodeType,TypeUtils.TypeMatchInfo)> EnumerateAllNodesWithFirstAssignablePinType(GraphDataType fromPinDataType)
         {
 			wait_for_library_build();
 
@@ -93,10 +93,10 @@ namespace Gradientspace.NodeGraph
                     // want to call here, because that considers conversion extensions, etc. However
                     // then we need ExecGraph. Could pass as argument? Or pass check funciton as argument?
 
-                    bool bCanConnectTypes = TypeUtils.CanConnectFromTo(fromPinDataType, inputInfo.DataType);
+                    bool bCanConnectTypes = TypeUtils.CanConnectFromTo(fromPinDataType, inputInfo.DataType, out TypeUtils.TypeMatchInfo matchInfo);
 
                     if (bCanConnectTypes)
-                        yield return info.nodeType;
+                        yield return (info.nodeType, matchInfo);
                     break;
                 }
             }

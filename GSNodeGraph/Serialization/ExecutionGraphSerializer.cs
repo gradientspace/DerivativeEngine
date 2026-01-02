@@ -503,8 +503,9 @@ namespace Gradientspace.NodeGraph
                     bool bTypeMatches = toDataType.IsSameType(in fromDataType);
 
                     // TODO: this is maybe too relaxed as it will allow (eg) a double to an int...
+                    // (now that matchInfo is available we could be more strict here...)
                     if (!bTypeMatches)
-                        bTypeMatches = TypeUtils.CanConnectFromTo(fromDataType, toDataType);
+                        bTypeMatches = TypeUtils.CanConnectFromTo(fromDataType, toDataType, out TypeUtils.TypeMatchInfo matchInfo);
                    
                     if (bTypeMatches) {
                         newInputName = input.InputName;
