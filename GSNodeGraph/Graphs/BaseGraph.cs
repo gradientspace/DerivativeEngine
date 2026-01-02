@@ -642,5 +642,27 @@ namespace Gradientspace.NodeGraph
             return false;
         }
 
+
+
+
+
+
+
+        // metatag support
+        protected Dictionary<string, string> MetaTags = new();
+        public virtual void AddOrUpdateMetaTag(string Key, string Value)
+        {
+            MetaTags[Key] = Value;
+        }
+        public IEnumerable<(string, string)> EnumerateMetaTags()
+        {
+            foreach (KeyValuePair<string, string> kvp in MetaTags)
+                yield return (kvp.Key, kvp.Value);
+        }
+        public virtual bool TryGetMetaTagValue(string Key, out string? Value)
+        {
+            return MetaTags.TryGetValue(Key, out Value);
+        }
+
     }
 }

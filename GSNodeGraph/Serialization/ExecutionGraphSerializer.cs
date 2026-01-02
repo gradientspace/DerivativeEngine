@@ -16,11 +16,21 @@ namespace Gradientspace.NodeGraph
 
             public string Version { get; set; }
             public string GraphType { get; set; }
+            public Dictionary<string, string> MetaTags { get; set; } = new();
 
             public VersionHeader(string version, string graphType)
             {
                 Version = version;
                 GraphType = graphType;
+            }
+
+            public void AddOrUpdateTags(IEnumerable<(string,string)> tags) {
+                foreach( var tag in tags )
+                    MetaTags[tag.Item1] = tag.Item2;
+            }
+            public void AddOrUpdateTags(Dictionary<string, string> tags) {
+                foreach (var tag in tags)
+                    MetaTags[tag.Key] = tag.Value;
             }
 
             public static VersionHeader Current { get { return Version_1p0; } }
@@ -93,6 +103,8 @@ namespace Gradientspace.NodeGraph
 
             public Func<NodeBase, bool>? IncludeNodeFunc = null;
 
+            public Dictionary<string, string>? AdditionalTags = null;
+
             public SaveGraphOptions() { }
         }
 
@@ -103,6 +115,10 @@ namespace Gradientspace.NodeGraph
             SaveGraphOptions options)
         {
             SerializedGraph Serialized = new SerializedGraph();
+
+            Serialized.Header.AddOrUpdateTags(graph.EnumerateMetaTags());
+            if (options.AdditionalTags != null)
+                Serialized.Header.AddOrUpdateTags(options.AdditionalTags);
 
             HashSet<Assembly> ReferencedAssemblies = new();
             Action<Assembly> CollectAssembly = (Assembly assembly) => {
@@ -227,6 +243,8 @@ namespace Gradientspace.NodeGraph
 
             public Dictionary<int, int>? NodeIDMapOut = null;
 
+            public Dictionary<string, string>? AllRestoredTags = null;
+
             public RestoreGraphOptions() { }
         }
 
@@ -245,6 +263,11 @@ namespace Gradientspace.NodeGraph
             SerializedGraph? Serialized = JsonSerializer.Deserialize<SerializedGraph>(utf8Stream);
             if (Serialized == null)
                 return false;
+
+            if (options.AllRestoredTags != null) {
+                foreach (var kvp in Serialized.Header.MetaTags)
+                    options.AllRestoredTags.Add(kvp.Key, kvp.Value);
+            }
 
             // try to load assemblies
             bool bNewAssembliesLoaded = false;
