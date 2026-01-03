@@ -13,27 +13,39 @@ namespace Gradientspace.NodeGraph.Util
     {
         public const string INSTALL_FOLDER = "%INSTALLDIR%";
 
-        public static int FindAndLoadNodeLibraries(string directoryPath, bool bIncludeSubFolders = true)
+        public static int TryLoadNodeLibraryDLLs(string directory)
         {
             int NumLoaded = 0;
-            SearchOption searchOption = bIncludeSubFolders ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
-            foreach (string dirPath in Directory.EnumerateDirectories(directoryPath, "*", searchOption) )
+            foreach (string filePath in Directory.EnumerateFiles(directory, "*.dll", SearchOption.TopDirectoryOnly)) 
             {
-                foreach (string filePath in Directory.EnumerateFiles(dirPath, "*.dll", SearchOption.TopDirectoryOnly)) 
-                {
-                    if ( AssemblyUtils.IsDotNetAssembly(filePath) == false)
-                        continue;
+                if ( AssemblyUtils.IsDotNetAssembly(filePath) == false)
+                    continue;
 
-                    try {
-                        Assembly LoadedAssembly = Assembly.LoadFrom(filePath);
-                        GlobalGraphOutput.AppendLog($"Loaded {filePath}");
-                        NumLoaded++;
-                    } catch {
-                        GlobalGraphOutput.AppendLog($"Failed to load {filePath}");
-                        // ignore load failures
-                    }
+                try {
+                    Assembly LoadedAssembly = Assembly.LoadFrom(filePath);
+                    GlobalGraphOutput.AppendLog($"Loaded {filePath}");
+                    NumLoaded++;
+                } catch {
+                    GlobalGraphOutput.AppendLog($"Failed to load {filePath}");
+                    // ignore load failures
                 }
             }
+            return NumLoaded;
+        }
+
+
+        public static int FindAndLoadNodeLibraries(string directoryPath, bool bIncludeSubFolders = true)
+        {
+            // try loading in top-level folder
+            int NumLoaded = TryLoadNodeLibraryDLLs(directoryPath);
+
+            // look in subdirectories 
+            SearchOption searchOption = bIncludeSubFolders ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+            foreach (string subDirPath in Directory.EnumerateDirectories(directoryPath, "*", searchOption) )
+            {
+                NumLoaded += TryLoadNodeLibraryDLLs(subDirPath);
+            }
+
             return NumLoaded;
         }
 
