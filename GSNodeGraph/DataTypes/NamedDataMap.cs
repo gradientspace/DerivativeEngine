@@ -17,11 +17,18 @@ namespace Gradientspace.NodeGraph
 
     public class NamedDataMap
     {
-        public DataItem[] Items;
+        // note: do not rely on this staying an array...
+        private DataItem[] Items;
 
         public NamedDataMap(int NumItems)
         {
             Items = new DataItem[NumItems];
+        }
+
+        public IEnumerable<DataItem> EnumerateItems()
+        {
+            foreach (DataItem item in Items)
+                yield return item;
         }
 
         public void SetItem(int Index, string name, object value)

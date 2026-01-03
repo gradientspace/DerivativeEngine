@@ -178,7 +178,7 @@ namespace Gradientspace.NodeGraph
                 return;
 
             List<IConnectionInfo> tmp = new List<IConnectionInfo>();
-            foreach (DataItem item in outputDatas.Items)
+            foreach (DataItem item in outputDatas.EnumerateItems())
             {
                 string OutputPinName = item.Name;
                 CachedPinKey pinKey = new() { NodeIdentifier = NodeHandle.Identifier, PinName = OutputPinName };
