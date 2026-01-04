@@ -21,14 +21,8 @@ namespace Gradientspace.NodeGraph.Util
                 if ( AssemblyUtils.IsDotNetAssembly(filePath) == false)
                     continue;
 
-                try {
-                    Assembly LoadedAssembly = Assembly.LoadFrom(filePath);
-                    GlobalGraphOutput.AppendLog($"Loaded {filePath}");
+                if (TryLoadNodeLibraryFromDLL(filePath))
                     NumLoaded++;
-                } catch {
-                    GlobalGraphOutput.AppendLog($"Failed to load {filePath}");
-                    // ignore load failures
-                }
             }
             return NumLoaded;
         }
@@ -77,6 +71,85 @@ namespace Gradientspace.NodeGraph.Util
         }
 
 
+
+        // This is some pretty hacky business to try to manage loaded NodeLibrary assemblies.
+        // Probably needs to be significantly rewritten to handle various things:
+        //  1) ExecutionGraphSerializer also tries to load assemblies referenced in .gg file.
+        //     It currently calls NotifyNodeLibraryLoadedExternally(), but it doesn't go through
+        //     the assembly-loading paths here, and it should.
+        //  2) In both cases, assemblies are loaded into default domain. This means we cannot
+        //     unload them. They need to be loaded into some other domain where we can guarantee
+        //     there are no references to any objects, to be unloaded
+        //  3) Currently punting on handling different versions. This should also be supported...?
+
+
+        public enum ELibraryLoadCheckResult
+        {
+            NotLoaded = 0,
+            AlreadyLoaded_ExactPath = 1,
+            AlreadyLoaded_DifferentPath = 2
+        }
+
+
+        public static ELibraryLoadCheckResult CheckIfNodeLibraryAlreadyLoaded(string DLLPath, out string? loadedPath)
+        {
+            loadedPath = null;
+            string baseDLLName = Path.GetFileNameWithoutExtension(DLLPath);
+            bool bFound = LoadedDLLs.TryGetValue(baseDLLName, out LoadedNodeLibraryDLLInfo loadedDLL);
+            if (bFound) {
+                if (loadedDLL.DLLPath == DLLPath)
+                    return ELibraryLoadCheckResult.AlreadyLoaded_ExactPath;
+                loadedPath = loadedDLL.DLLPath;
+                return ELibraryLoadCheckResult.AlreadyLoaded_DifferentPath;
+            }
+            return ELibraryLoadCheckResult.NotLoaded;
+        }
+
+        public static void NotifyNodeLibraryLoadedExternally(Assembly assembly)
+        {
+            string baseDLLName = Path.GetFileNameWithoutExtension(assembly.Location);
+            LoadedDLLs.Add(baseDLLName, new LoadedNodeLibraryDLLInfo() { LoadedAssembly = assembly, DLLPath = assembly.Location });
+        }
+
+
+
+
+        // internal implementation
+
+
+        private struct LoadedNodeLibraryDLLInfo
+        {
+            public Assembly LoadedAssembly;
+            public string DLLPath;
+        }
+
+        private static Dictionary<string, LoadedNodeLibraryDLLInfo> LoadedDLLs = new();
+
+
+        public static bool TryLoadNodeLibraryFromDLL(string DLLPath)
+        {
+            string baseDLLName = Path.GetFileNameWithoutExtension(DLLPath);
+            bool bAlreadyLoaded = LoadedDLLs.TryGetValue(baseDLLName, out LoadedNodeLibraryDLLInfo loadedDLL);
+
+            if ( bAlreadyLoaded ) {
+                if (loadedDLL.DLLPath == DLLPath)
+                    return true;
+                GlobalGraphOutput.AppendError($"Tried to load NodeLibrary {baseDLLName} from {DLLPath}," +
+                    $"but it has already been loaded from {loadedDLL.DLLPath}. Skipping new DLL/path.");
+                return false;
+            }
+
+            try {
+                Assembly loadedAssembly = Assembly.LoadFrom(DLLPath);
+                GlobalGraphOutput.AppendLog($"Loaded NodeLibrary {baseDLLName} from {DLLPath}");
+                LoadedDLLs.Add(baseDLLName, new LoadedNodeLibraryDLLInfo() { LoadedAssembly = loadedAssembly, DLLPath = DLLPath });
+                return true;
+            } catch {
+                GlobalGraphOutput.AppendLog($"Failed to load NodeLibrary from {DLLPath}");
+                return false;
+            }
+
+        }
 
     }
 }

@@ -121,25 +121,45 @@ namespace Gradientspace.NodeGraph.Util
         }
 
 
-        public static EAssemblyLoadResult TryFindLoadAssembly(string QualifiedName, string DLLName)
+        public static EAssemblyLoadResult TryFindLoadAssembly(string QualifiedName, string DLLName, out Assembly? LoadedAssembly)
         {
-            Assembly? foundAssembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(asm => asm.FullName == QualifiedName);
-            if (foundAssembly != null)
+            LoadedAssembly = null;
+
+            // check if we have already loaded this assembly w/ exact matching qualified namae
+            LoadedAssembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(asm => asm.FullName == QualifiedName);
+            if (LoadedAssembly != null)
                 return EAssemblyLoadResult.AlreadyLoaded;
 
+            // check if we have loaded the same version (but possibly w/ different Culture...)
+            string NameWithVersion = SimplifyQualifiedAssemblyName(QualifiedName);
+            LoadedAssembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(asm => asm.FullName?.StartsWith(NameWithVersion, StringComparison.OrdinalIgnoreCase) ?? false);
+            if (LoadedAssembly != null)
+                return EAssemblyLoadResult.AlreadyLoaded;
+
+            // check if we have loaded a different version. for now we will accept this...but log a message.
+            string NameOnly = GetBaseAssemblyName(QualifiedName);
+            LoadedAssembly = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(asm => asm.FullName?.StartsWith(NameOnly, StringComparison.OrdinalIgnoreCase) ?? false);
+            if (LoadedAssembly != null) {
+                GlobalGraphOutput.AppendLog($"[TryFindLoadAssembly] found [{SimplifyQualifiedAssemblyName(LoadedAssembly.FullName!)}] when trying to load {QualifiedName}. "
+                    + $"Currently different versions are not supported. Keeping existing version.");
+                GlobalGraphOutput.AppendLog("If graph does not load properly, try removing from NodeLibraries or referenced Assemblies in .gg file");
+                return EAssemblyLoadResult.AlreadyLoaded;
+            }
+
+            // try to load assembly by qualified name, and if that fails, try using DLL path
             try
             {
-                Assembly.Load(QualifiedName);
+                LoadedAssembly = Assembly.Load(QualifiedName);
             }
             catch (Exception)
             {
                 try
                 {
-                    Assembly.LoadFrom(DLLName);
+                    LoadedAssembly = Assembly.LoadFrom(DLLName);
                 }
                 catch (Exception)
                 {
-                    GlobalGraphOutput.AppendError($"Failed to load assembly {QualifiedName} from {DLLName}");
+                    GlobalGraphOutput.AppendError($"Failed to load assembly {SimplifyQualifiedAssemblyName(QualifiedName)} from {DLLName}");
                     return EAssemblyLoadResult.FailedToLoad;
                 }
             }
@@ -147,7 +167,25 @@ namespace Gradientspace.NodeGraph.Util
             return EAssemblyLoadResult.LoadedSuccessfully;
         }
 
+        /// strip off 'Culture=' and 'PublicKey=' parts of assembly names
+        public static string SimplifyQualifiedAssemblyName(string QualifiedName)
+        {
+            int startIndex = QualifiedName.IndexOf("Culture=");
+            if ( startIndex >= 0 ) {
+                int prevComma = QualifiedName.LastIndexOf(',', startIndex);
+                if (prevComma >= 0 )
+                    return QualifiedName.Substring(0, prevComma);
+            }
+            return QualifiedName;
+        }
 
+        public static string GetBaseAssemblyName(string QualifiedName)
+        {
+            int commaIndex = QualifiedName.IndexOf(",");
+            if (commaIndex > 0)
+                return QualifiedName.Substring(0, commaIndex);
+            return QualifiedName;
+        }
 
 
         public static bool IsDotNetAssembly(string dllPath)

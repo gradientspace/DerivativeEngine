@@ -269,14 +269,28 @@ namespace Gradientspace.NodeGraph
                     options.AllRestoredTags.Add(kvp.Key, kvp.Value);
             }
 
-            // try to load assemblies
+            // try to load assemblies referenced by graph file
             bool bNewAssembliesLoaded = false;
             foreach (AssemblyDependency assemblyDep in Serialized.Assemblies)
             {
-                AssemblyUtils.EAssemblyLoadResult LoadResult 
-                    = AssemblyUtils.TryFindLoadAssembly(assemblyDep.QualifiedName, assemblyDep.DLLPath);
-                if ( LoadResult == AssemblyUtils.EAssemblyLoadResult.LoadedSuccessfully )
+                var checkResult = NodeLibraryUtils.CheckIfNodeLibraryAlreadyLoaded(assemblyDep.DLLPath, out string? loadedPath);
+                if (checkResult == NodeLibraryUtils.ELibraryLoadCheckResult.AlreadyLoaded_ExactPath)
+                    continue;       // library is already loaded and we can skip it
+                if (checkResult == NodeLibraryUtils.ELibraryLoadCheckResult.AlreadyLoaded_DifferentPath) {
+                    GlobalGraphOutput.AppendLog($"[Serializer] Graph Loader requested Assembly {assemblyDep.DLLPath} but a NodeLibrary with the same DLL name has already been loaded from {loadedPath!}. ignoring.");
+                    continue;
+                }
+                Debug.Assert(checkResult == NodeLibraryUtils.ELibraryLoadCheckResult.NotLoaded);    // in case more options added later
+
+                AssemblyUtils.EAssemblyLoadResult LoadResult
+                    = AssemblyUtils.TryFindLoadAssembly(assemblyDep.QualifiedName, assemblyDep.DLLPath, out Assembly? LoadedAssembly);
+                if (LoadResult == AssemblyUtils.EAssemblyLoadResult.LoadedSuccessfully) {
+                    if (LoadedAssembly != null) {
+                        GlobalGraphOutput.AppendLog($"[Serializer] Loaded referenced Assembly {LoadedAssembly.GetName().Name!} from {LoadedAssembly.Location} ");
+                        NodeLibraryUtils.NotifyNodeLibraryLoadedExternally(LoadedAssembly);
+                    }
                     bNewAssembliesLoaded = true;
+                }
             }
             if ( bNewAssembliesLoaded ) {
                 // if we loaded new assemblies, we need to refresh the node library
