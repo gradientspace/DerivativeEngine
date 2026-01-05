@@ -4,6 +4,7 @@ using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices.Marshalling;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -82,6 +83,35 @@ namespace Gradientspace.NodeGraph.Image
             SKData imageData = skImage.Encode(SKEncodedImageFormat.Png, Quality);
             return imageData.ToArray();
         }
+
+        public static PixelImage PNGBufferToPixelImage(ReadOnlySpan<byte> imageBytes)
+        {
+            // this is not efficient...
+            SKImage image = SKImage.FromEncodedData(imageBytes);
+            return new PixelImage(image.Width, image.Height, imageBytes, PixelImage.EPixelFormat.Encoded, PixelImage.ECompression.PNG);
+        }
+        public static PixelImage JPEGBufferToPixelImage(ReadOnlySpan<byte> imageBytes)
+        {
+            SKImage image = SKImage.FromEncodedData(imageBytes);
+            return new PixelImage(image.Width, image.Height, imageBytes, PixelImage.EPixelFormat.Encoded, PixelImage.ECompression.JPEG);
+        }
+
+        public static PixelImage ImageBytesToPixelImage(in byte[] imageBytes)
+        {
+            using (Stream memStream = new MemoryStream(imageBytes)) {
+                SKCodec codec = SKCodec.Create(memStream);
+                int width = codec.Info.Width;
+                int height = codec.Info.Height;
+                SKEncodedImageFormat format = codec.EncodedFormat;
+                if (format == SKEncodedImageFormat.Png) {
+                    return new PixelImage(width, height, imageBytes, PixelImage.EPixelFormat.Encoded, PixelImage.ECompression.PNG);
+                } else if (format == SKEncodedImageFormat.Jpeg) {
+                    return new PixelImage(width, height, imageBytes, PixelImage.EPixelFormat.Encoded, PixelImage.ECompression.JPEG);
+                } else
+                    throw new NotSupportedException($"[ImageUtil.ImageBytesToPixelImage] image format {format} is not supported");
+            }
+        }
+
 
         public static byte[] PixelImageToMimeData(PixelImage Image, out string mimeType, int Quality = 100)
         {
