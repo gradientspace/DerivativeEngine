@@ -39,19 +39,19 @@ namespace Gradientspace.NodeGraph.PythonNodes
             RequestedDataOut.SetItemValueChecked(OutputName, array);
         }
     }
-    [GraphNodeNamespace("Python")] [GraphNodeUIName("List[string] to string[]")]
+    [GraphNodeNamespace("Python.Conversion")] [GraphNodeUIName("List[string] to string[]")]
     public class PyStringListToArrayNode : PyListToArrayNode<string> {
         public PyStringListToArrayNode() : base(PythonType.ListStr) { }
     }
-    [GraphNodeNamespace("Python")] [GraphNodeUIName("List[int] to int[]")]
+    [GraphNodeNamespace("Python.Conversion")] [GraphNodeUIName("List[int] to int[]")]
     public class PyIntListToArrayNode : PyListToArrayNode<int> {
         public PyIntListToArrayNode() : base(PythonType.ListInt) { }
     }
-    [GraphNodeNamespace("Python")] [GraphNodeUIName("List[float] to double[]")]
+    [GraphNodeNamespace("Python.Conversion")] [GraphNodeUIName("List[float] to double[]")]
     public class PyFloatListToArrayNode : PyListToArrayNode<double> {
         public PyFloatListToArrayNode() : base(PythonType.ListFloat) { }
     }
-    [GraphNodeNamespace("Python")] [GraphNodeUIName("List[bool] to bool[]")]
+    [GraphNodeNamespace("Python.Conversion")] [GraphNodeUIName("List[bool] to bool[]")]
     public class PyBoolListToArrayNode : PyListToArrayNode<bool> {
         public PyBoolListToArrayNode() : base(PythonType.ListBool) { }
     }
@@ -72,19 +72,19 @@ namespace Gradientspace.NodeGraph.PythonNodes
             RequestedDataOut.SetItemValueChecked(OutputName, array);
         }
     }
-    [GraphNodeNamespace("Python")] [GraphNodeUIName("List[string] to List<string>")]
+    [GraphNodeNamespace("Python.Conversion")] [GraphNodeUIName("List[string] to List<string>")]
     public class PyStringListToListNode : PyListToCSharpListNode<string> {
         public PyStringListToListNode() : base(PythonType.ListStr) { }
     }
-    [GraphNodeNamespace("Python")] [GraphNodeUIName("List[int] to List<int>")]
+    [GraphNodeNamespace("Python.Conversion")] [GraphNodeUIName("List[int] to List<int>")]
     public class PyIntListToListNode : PyListToCSharpListNode<int> {
         public PyIntListToListNode() : base(PythonType.ListInt) { }
     }
-    [GraphNodeNamespace("Python")] [GraphNodeUIName("List[float] to List<double>")]
+    [GraphNodeNamespace("Python.Conversion")] [GraphNodeUIName("List[float] to List<double>")]
     public class PyFloatListToListNode : PyListToCSharpListNode<double> {
         public PyFloatListToListNode() : base(PythonType.ListFloat) { }
     }
-    [GraphNodeNamespace("Python")] [GraphNodeUIName("List[bool] to List<bool>")]
+    [GraphNodeNamespace("Python.Conversion")] [GraphNodeUIName("List[bool] to List<bool>")]
     public class PyBoolListToListNode : PyListToCSharpListNode<bool> {
         public PyBoolListToListNode() : base(PythonType.ListBool) { }
     }
