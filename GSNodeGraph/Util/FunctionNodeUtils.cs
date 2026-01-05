@@ -103,6 +103,7 @@ namespace Gradientspace.NodeGraph
 
                 // this checks if parameter is marked with a ?
                 bool bIsDeclaredNullable = FunctionNodeUtils.IsNullableParameter(paramInfo);
+                bool bIsExplicitOptional = bIsDeclaredNullable || FunctionNodeUtils.IsOptionalParameter(function, paramInfo);
 
                 bool bIsRefParam = paramType.IsByRef && (paramInfo.IsOut == false);
                 Type baseType = (bIsRefParam || paramInfo.IsOut) ? paramType.GetElementType()! : paramType;        // strip off &
@@ -138,7 +139,7 @@ namespace Gradientspace.NodeGraph
                     inputArg.paramInfo = paramInfo;
                     inputArg.argIndex = i;
                     inputArg.argName = paramName;
-                    inputArg.bIsOptional = bIsNullable || bIsDeclaredNullable;
+                    inputArg.bIsOptional = bIsNullable || bIsExplicitOptional;
                     inputArg.bIsRefInput = bIsRefParam;
                     inputArg.argType = (bIsNullable) ? realType! : baseType;
                     InputArguments[InputI++] = inputArg;
@@ -167,6 +168,15 @@ namespace Gradientspace.NodeGraph
             // in this case, the value is a ReadOnlyCollection, or something more complicated...so fall
             // back to more complex check
             return (new NullabilityInfoContext().Create(paramInfo).WriteState == NullabilityState.Nullable);
+        }
+
+
+        public static bool IsOptionalParameter(MethodInfo methodInfo, ParameterInfo paramInfo)
+        {
+            NodeParameter? found = methodInfo.GetCustomAttributes<NodeParameter>().FirstOrDefault((NodeParameter param) => {
+                return param.ArgumentName == paramInfo.Name && param.IsOptional == true;
+            });
+            return found != null;
         }
 
 
