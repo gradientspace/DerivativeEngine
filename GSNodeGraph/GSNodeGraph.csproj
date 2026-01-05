@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\DerivativeCore\GSNodeGraphCore\GSNodeGraphCore.csproj" />
+    <ProjectReference Include="..\..\GSNodeGraphCore\GSNodeGraphCore\GSNodeGraphCore.csproj" />
   </ItemGroup>
 
 </Project>
