@@ -23,7 +23,7 @@ namespace GSPython
 
 		public static bool IsPythonAvailable { get { return bIsPythonInitialized; } }
 
-		public static bool InitializePython()
+		public static bool InitializePython(List<string>? OutputMessages = null)
 		{
 			if (bIsPythonInitialized)
 				return true;
@@ -35,7 +35,7 @@ namespace GSPython
 			{
 				FindPython_Win(PythonVersions);
 				if (PythonVersions.Count == 0) {
-					Debug.WriteLine("Could not find a suitable python dll!");
+                    OutputMessages?.Add("[GSPython] Could not find a suitable Python installation/DLL! Python will not be available.");
 					return false;
 				}				
 			}
@@ -45,13 +45,13 @@ namespace GSPython
 			{
 				FindPython_OSX(PythonVersions);
 				if (PythonVersions.Count == 0) {
-					Debug.WriteLine("Could not find a suitable Python Framework installation! Must install full OSX Framework from python.org/downloads.");
+                    OutputMessages?.Add("[GSPython] Could not find a suitable Python Framework installation! Must install full OSX Framework from python.org/downloads.");
 					return false;
 				}
 			}
 
 			if (PythonVersions.Count == 0) {
-				Debug.WriteLine("Current platform does not support Python");
+				OutputMessages?.Add("[GSPython] Current platform does not support Python");
 				return false;
 			}
 
@@ -60,17 +60,24 @@ namespace GSPython
 			PythonVersions.Reverse();
 
 			foreach (var version in PythonVersions)
-				Debug.WriteLine($"[GSPython] Found Python {version.PythonVersion} installation at {version.Path}");
+                OutputMessages?.Add($"[GSPython] Found Python {version.PythonVersion} installation at {version.Path}");
 
 			Python.Runtime.Runtime.PythonDLL = PythonVersions[0].PythonDLLPath;
 
-			Debug.WriteLine($"[GSPython] Trying to Initialize PythonEngine with DLL {PythonVersions[0].PythonDLLPath}");
+            string initMessage = $"[GSPython] Trying to Initialize PythonEngine with DLL {PythonVersions[0].PythonDLLPath}...";
+            try {
+                PythonEngine.Initialize();
 
-			PythonEngine.Initialize();
+                // ??? does BeginAllowThreads() block or not-block the GIL thing?
+                // see https://github.com/pythonnet/pythonnet/wiki/Threading
+                BeginAllThreadsHandle = PythonEngine.BeginAllowThreads();
+                OutputMessages?.Add(initMessage + "Ok!");
 
-			// ??? does BeginAllowThreads() block or not-block the GIL thing?
-			// see https://github.com/pythonnet/pythonnet/wiki/Threading
-			BeginAllThreadsHandle = PythonEngine.BeginAllowThreads();
+            } catch (Exception ex) {
+                OutputMessages?.Add(initMessage);
+                OutputMessages?.Add($"[GSPython] PythonEngine Initialization Failed : {ex.Message}");
+                return false;
+            }
 
 			bIsPythonInitialized = true;
 			return true;
